@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	
+	<script type="text/javascript" src="../../includeall.js"></script>
+	
+	<title>Curves</title>
+	<script type="text/javascript">
+		
+		function ready() {
+				
+				$kust.library('test')
+				.widget('sayhello', function(el) {
+					$(el).html('say hello');
+				});
+				
+				
+		};
+	</script>
+</head>
+<body>
+	<div ui-test="sayhello"></div>
+</body>
+</html>

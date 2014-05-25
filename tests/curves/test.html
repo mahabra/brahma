@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	
+	<script type="text/javascript" src="../../includeall.js"></script>
+	
+	<title>Curves</title>
+	<script type="text/javascript">
+		
+		function ready() {
+				
+				$script.ready(['curve'], function() {
+					
+					
+					var curve = $bush("#herecurves").plugin("curve", {
+					   "strokeStyle": "#616c70",
+					   "fillStyle": "#616c70"
+					})
+					.debug().bezier2D(
+					   100, 10, 150, 10, 190, 50, 190, 100,
+					   190, 100, 190, 150, 150, 190, 100, 190,
+					   100, 190, 50, 190, 10, 150, 10, 100,
+					   10, 100, 10, 50, 50, 10, 100, 10
+					);
+					
+					var curve = $bush("#herecurves2").plugin("curve", {
+					   "strokeStyle": "#616c70",
+					   "fillStyle": "#616c70"
+					})
+					.bezier2D(
+					   100, 10, 150, 10, 190, 50, 190, 100,
+					   190, 100, 190, 150, 150, 190, 100, 190,
+					   100, 190, 50, 190, 10, 150, 10, 100,
+					   10, 100, 10, 50, 50, 10, 100, 10
+					);
+				});
+			
+				$script('../../dist/plugins/curve/curve.mb.1.0.js', 'curve');
+		
+		};
+	</script>
+</head>
+<body>
+	<div id="herecurves" style="width:400px;height:400px;"></div>
+	<div id="herecurves2" style="width:400px;height:400px;"></div>
+</body>
+</html>

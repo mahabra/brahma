@@ -1,0 +1,40 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	
+	<script type="text/javascript" src="../../includeall.js"></script>
+	
+	<title>jQuery Plugin</title>
+	<script type="text/javascript">
+		
+		function ready() {
+			
+			$(document).ready(function() {
+			
+			
+				$('#test1').bush(function() {
+					console.log('element by bush', this);
+					console.log('element by jquery', $('#test1'));
+					$(this).html('jQuery says: Ok i see em!');
+				});
+				
+				$bush($('#test2')).html('Bush says: Ok i see em, too. I compatible with jQuery.');
+			
+			
+		
+			});
+		
+			$bush.ui('test').widget('sayhi', function(el) {
+				
+				$(el).css("font-size", "20px");
+			});
+		};
+	</script>
+</head>
+<body>
+	Hello!
+	<p><div class="testme" id="test1">1</div></p>
+	<div class="testme" id="test2" ui-test="sayhi">2</div>
+</body>
+</html>

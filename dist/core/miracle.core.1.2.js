@@ -734,7 +734,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		} else {
 			// > Test for plugin exists
 			if (typeof Miracle.plugins[arguments[0]] != 'object') {
-				throw('Miracle: require touch plugin. Visit '+Miracle.info.homesite+' to download it.');
+				throw('Miracle: require `'+arguments[0]+'` component. Visit '+Miracle.info.homesite+' to download it.');
 			}
 
 			// > We can give options to life elemnt
@@ -754,14 +754,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			Miracle(this)[0].life = plug;
 
 			try {
-				
+				var result = plug.execute();
 			} catch(e) {
-				
-				throw('Miracle error: undefined plugin `'+arguments[0]+'`');
+				console.log(plug);
+				throw('Miracle: plugin `'+arguments[0]+'` has no method execute');
 				return {};
 			}
 
-			var result = plug.execute();
+			
 			if (typeof result == 'undefined') return plug;
 			else return result;
 		}

@@ -1,9 +1,11 @@
-MiracleBush
+Majestic
 ====
+
+### Attention. The library is under reconstruction!
 
 ### Javascript framework for creating visual components library.
 
-Visit project page: http://miraclebush.vladimirkalmykov.com/
+Visit project page: http://majestic.vladimirkalmykov.com/
 
 ## Getting Started
 

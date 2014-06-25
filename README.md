@@ -1,4 +1,4 @@
-Majestic
+Brahma
 ====
 ### Javascript framework for creating visual components library & widget's packages.
 

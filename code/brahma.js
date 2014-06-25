@@ -1,4 +1,4 @@
-/*  
+/*
 require and requirecss functions 
 performed by Vladimir Kalmykov, 2013 under MIT license
 Use it if requirejs is not defined.
@@ -3729,7 +3729,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 			test: 123
 		},
 		init : function() {
-			// Проверяем является ли объект типом Canvas
+			// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ Canvas
 			
 			if (Brahma(this.elements)[0].tagName.toUpperCase() != 'CANVAS') {
 				
@@ -3749,16 +3749,16 @@ Copyright (C) 2014 Vladimir Kalmykov
 				this.canvas = Brahma(this.elements)[0];
 			};				
 			
-			// Проверяем понимает ли браузер canvas
+			// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ canvas
 			if (this.canvas.getContext) {
-				this.ctx = this.canvas.getContext('2d'); // Получаем 2D контекст
+				this.ctx = this.canvas.getContext('2d'); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 2D пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 			} else {
 				alert('error');
 			};
 			
-			this.ctx.strokeStyle = this.options.strokeStyle; // Цвет обводки
-			this.ctx.lineWidth = this.options.lineWidth; // Ширина линии
-			this.ctx.fillStyle = this.options.fillStyle; // Цвет заливки
+			this.ctx.strokeStyle = this.options.strokeStyle; // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+			this.ctx.lineWidth = this.options.lineWidth; // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+			this.ctx.fillStyle = this.options.fillStyle; // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		},
 		debug : function() {
 			this.current.debug = true;
@@ -3777,7 +3777,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 			
 			
 			this.ctx.beginPath();
-			this.ctx.moveTo(P0x, P0y); // Начало линии 
+			this.ctx.moveTo(P0x, P0y); // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ 
 			
 			var t = 0;		
 			while ( t<=1 ) {
@@ -3793,7 +3793,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 			this.ctx.closePath();
 			
 			if (this.current.debug) {
-				// ! рисуем точки
+				// ! пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 				this.drawCheckpoints.apply(this, arguments);
 				
 			};
@@ -3812,7 +3812,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 			var P1y = arguments[arguments.length-1];
 			
 			this.ctx.beginPath();
-			this.ctx.moveTo(P0x, P0y); // Начало линии 
+			this.ctx.moveTo(P0x, P0y); // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ 
 			
 			while ( t<=1 ) {
 				
@@ -3841,9 +3841,9 @@ Copyright (C) 2014 Vladimir Kalmykov
 			this.ctx.closePath();
 			
 			if (this.current.debug) {
-				// ! рисуем точки
+				// ! пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 				this.drawCheckpoints.apply(this, arguments);
-				// ! рисуем направляющие
+				// ! пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				this.setStyle(this.options['debug-fillStyle'], this.options['debug-fillStyle'], 2);
 				this.linear(P0x, P0y, arguments[2], arguments[3]);
 				this.linear(arguments[2], arguments[3], P1x, P1y);
@@ -3858,7 +3858,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 			var t = 0;	
 			
 			this.ctx.beginPath();
-			this.ctx.moveTo(P0x, P0y); // Начало линии 
+			this.ctx.moveTo(P0x, P0y); // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ 
 			
 			while ( t<=1 ) {
 				
@@ -3877,9 +3877,9 @@ Copyright (C) 2014 Vladimir Kalmykov
 			
 			
 			if (this.current.debug) {
-				// ! рисуем точки
+				// ! пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 				this.drawCheckpoints.apply(this, arguments);
-				// ! рисуем направляющие
+				// ! пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				this.setStyle(this.options['debug-fillStyle'], this.options['debug-fillStyle'], 2);
 				this.linear(P0x, P0y, P1x, P1y);
 				this.linear(P3x, P3y, P2x, P2y);

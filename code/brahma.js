@@ -1,4 +1,4 @@
-/* 
+/*  
 require and requirecss functions 
 performed by Vladimir Kalmykov, 2013 under MIT license
 Use it if requirejs is not defined.

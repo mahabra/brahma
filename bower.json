@@ -1,0 +1,24 @@
+{
+    "name": "Brahma",
+    "version": "1.0",
+    "main": "code/brahma.js",
+    "ignore": [
+        "dist",
+        ".bowerrc",
+        ".gitignore",
+        ".jshintignore",
+        ".jshintrc",
+        "bower.json",
+        "gruntfile.js",
+        "package.json",
+        "README.md"
+    ],
+    "devDependencies": {
+    	"sizzle": "1.10.19"
+    },
+	"keywords": [
+	    "brahma",
+	    "javascript",
+	    "library"
+	]
+}

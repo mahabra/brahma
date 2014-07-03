@@ -80,17 +80,13 @@ Brahma('brahma.trigonometria', function() {
 			distY: function(radius, radian) {
 				return radius*this.sin(90 - radian);
 			},
-			/*
-			@function perspective
-			!
-			ГђГ Г±Г·ГҐГІ Г°Г Г§Г¬ГҐГ°Г  Г§Г ГµГўГ ГІГ»ГўГ ГҐГ¬Г®ГЈГ® ГЇГ°Г®Г±ГІГ°Г Г­Г±ГІГўГ  Гў Г§Г ГўГЁГ±ГЁГ¬Г®Г±ГІГЁ Г®ГІ ГіГ¤Г Г«ГҐГ­Г­Г®Г±ГІГЁ, ГґГ®ГЄГіГ±Г­Г®ГЈГ® Г°Г Г±Г±ГІГ®ГїГ­ГЁГї ГЁ Г°Г Г§Г¬ГҐГ°Г®Гў Г¬Г ГІГ°ГЁГ¶Г»
-			*/
+			/* calc 3D perspective */
 			perspective: function(focusd, matrixw, distantion) {
-				/* ! ГіГ§Г­Г ГҐГ¬ ГЇГ®Г«Г®ГўГЁГ­Гі ГіГЈГ®Г«Г  Г®ГЎГ§Г®Г°Г  */
-				var hangle = this.delta2sc(matrixw/2, focusd, 90)['$A'];
-				/* ! ГіГ§Г­Г ГҐГ¬ ГёГЁГ°ГЁГ­Гі Г®ГЎГ®Г§Г°ГҐГўГ ГҐГ¬Г®ГЈГ® ГЇГ°Г®Г±ГІГ°Г Г­Г±ГІГўГ  Г­Г  Г°Г Г±Г±ГІГ®ГїГ­ГЁГЁ distantion */
-				var areaw = this.delta2c1s(distantion, hangle, (90-hangle)).c;
 				
+				var hangle = this.delta2sc(matrixw/2, focusd, 90)['$B'];
+				
+				var areaw = this.delta2c1s(distantion, hangle, (90-hangle)).c;
+				//console.log(focusd, matrixw, distantion, '=', areaw);
 				return areaw;
 			}
 		};

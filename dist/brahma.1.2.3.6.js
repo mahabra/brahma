@@ -167,10 +167,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					selector = '';
 					// > Check extensionName and append to air.amd.defined
 					if (extensionName) {
-
-						if (air.amd.defined.indexOf(extensionName) < 0) 
-						air.amd.defined.push(extensionName);
-					};	
+						/* Now we must put extensionName to defined list. But if there is relates, we have to wait for loading all depends. 
+						So, we create appendToDefinedOnReady function to use it later.
+						And append it to `detained` list to prevent autorequire. */
+						if (air.amd.detained.indexOf(extensionName) < 0) 
+							air.amd.detained.push(extensionName);
+						
+						var applyOnReady = function() {
+							
+							callback.apply(this); 
+							this.amd.detainedReady(extensionName);
+						};
+					} else {
+						var applyOnReady = function() { callback.apply(this); /* do nothing */ };
+					}
 					
 					if (Brahma.isArray(options) && options.length>0) {
 						
@@ -178,7 +188,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					} else {
 						/* eval factory now */
 						air.amd.ready(function() {
-							
+							applyOnReady.apply(this);
 							callback.apply(this);
 						});
 					};
@@ -201,11 +211,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			if (typeof callback == 'function') {
 				if (onFillQueues) {
 
-					onFillQueues.push({callback: callback, require_amd: require_amd});
+					onFillQueues.push({callback: applyOnReady, require_amd: require_amd});
 				}
 				else {
 
-					air.includeQueue({callback: callback, require_amd: require_amd});
+					air.includeQueue({callback: applyOnReady, require_amd: require_amd});
 				}
 			};
 
@@ -241,6 +251,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		this.loadings = 0;
 		this.queue = [];
 		this.defined = [];
+		this.detained = [];
 		this.requested = []; // < queues that already request or requested
 		this.isReady = function(depends) {
 			var depends = depends || false;
@@ -259,6 +270,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				return true;
 			}
 		};
+		this.detainedReady = function(extensionName) {
+			if (this.defined.indexOf(extensionName) < 0) 
+			this.defined.push(extensionName);
+
+			var ndetained = [];
+			for (var d =0;d<this.detained.length;d++) {
+				if (this.detained[d]==extensionName) continue;
+				ndetained.push(this.detained[d]);
+			}
+			this.detained = ndetained;
+
+			this.loaded([extensionName]);
+		}
 		this.ready = this.onReady = function() {
 
 			if (arguments.length==1) {
@@ -286,7 +310,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			if (typeof require == 'function') {
 				var real = [];
 				for (var i =0;i<amd.length;i++) {
-					if (this.requested.indexOf(amd[i]) < 0) {
+					
+					/* check for requested && detained */
+					if (this.requested.indexOf(amd[i]) < 0 && this.detained.indexOf(amd[i])<0) {
 						this.requested.push(amd[i]);
 						real.push(amd[i]);
 					};
@@ -294,7 +320,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 				if (real.length>0) {
 					this.loadings++;
-					
+
 					require(real, function() {
 						that.loaded(real);
 					});
@@ -310,16 +336,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			};
 		};
 		this.loaded = function(amd) {
-			
+			var that = this;
 			this.loadings--;
 			var amd = amd || [];
 
 			/* set amd mark */
 			for (var i = 0; i<amd.length;i++) {
-				this.defined.push(amd[i]);
+				// check the name exists in detained
+				 if (this.detained.indexOf(amd[i])<0) this.defined.push(amd[i]);
 			};
 
 			if (this.loadings<1) {
+				
 				this.loadings=0;
 				if (this.queue.length>0) {
 					var queue = this.queue;
@@ -327,15 +355,52 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					this.queue = [];
 					
 					queue = queue.reverse();
-					for (var i =0; i<queue.length;i++) {
-						// eval functions if this.loadings still < 1
 
-						if (this.isReady(queue[i].depends)) {
-							
-							queue[i].callback.apply(this.M);
-						}
-						else this.queue.push(queue[i]);
-					}
+					/*
+					Include only completed objects
+					Form me on http://jsfiddle.net/Morulus/973XW/
+					*/
+					var uncompleted = (function(cloud, onStaffed, testReady) {
+					    var i = 0, // Counter
+					    onboard = cloud.length, // count of objects on board
+					    done = 0, // count of objects sended to ready
+					    left = 0; // left on board
+					    
+					    do {
+					        (function(cloud) {
+					            if (!testReady(cloud[i].depends)) {
+					                    left++; // one more left
+					                    
+					                    cloud.push(cloud[i]); // put it to end of array
+					                    return;
+					            };
+					           
+					           
+					            onStaffed(cloud[i]);
+
+					            //ready.push(cloud[i].name); // put it to ready
+					            done++; // remember that one more 
+					        })(cloud);
+					        i++; // counter++
+					        onboard--; // left from board
+					        if (onboard==0) { // if there is no more left on the board
+					            if (done==0) { break; }; // if no object goes to ready then we have to stop the process
+					            onboard = left; done = 0; left = 0; // or reset variables
+					        };
+					    } while(i < cloud.length);
+					    
+					    return cloud.splice(cloud.length-left, cloud.length);
+					})(queue, function(queue) {
+
+						queue.callback.apply(that.M); // in the context of Brahma.amd execute callback
+					}, function(depends) {
+
+						return that.isReady(depends);
+					});
+
+					for (var u = 0;u<uncompleted.length;u++) {
+						this.queue.push(uncompleted[i]);
+					};
 				}
 			}
 		}
@@ -710,7 +775,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					var todelete = [];
 					for (var i = 0; i<this.eventListners[e].length; i++) {
 						if (typeof this.eventListners[e][i] == 'object') {
-							this.eventListners[e][i].callback.apply(this, args);
+							if (typeof this.eventListners[e][i].callback == "function") this.eventListners[e][i].callback.apply(this, args);
 							if (this.eventListners[e][i].once) {
 								todelete.push(i);
 							};
@@ -730,20 +795,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					case 'string':
 						
 						this.config[key] = value;
+						this.trigger('reconfig', [key]);
 					break;
 					case 'object':
 						var c = this.config;
-						for (var q=0;q<key.length-1;q++) {
+						var keys = [];
+						for (var q in key) {
+							keys.push(q);
 							
-							if (typeof this.config[key[q]] == 'undefined')
-							this.config[key[q]] = {};
-							c = this.config[key[q]]
-							
+							this.config[q] = key[q];
 						};
-						c[key[key.length-1]] = value;
+
+						this.trigger('reconfig', [keys]);
 					break;
 				}
-				this.trigger('reconfig', [key]);
 				return this;
 			},
 			// get config value
@@ -1185,9 +1250,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 			if (typeof $data.config == 'object') widget.config = Brahma.api.extend(widget.config, $data.config);
 			
-
-
-
 			Brahma.widgets[name] = widget;
 			
 			
@@ -1228,7 +1290,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				return {};
 			}
 			
-			
 			var result = plug.execute();
 			
 			return plug;
@@ -1240,6 +1301,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		if (this === window || typeof this == 'function') {
 			// > name of applet
 			var name = arguments[0];
+
 			// > data
 			if (arguments.length>1) {
 				switch(typeof arguments[1]) {
@@ -1283,11 +1345,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			};
 
 			// merge with $data and make it Brahma module
+			// merge with $data and make it Brahma module
 			applet = Brahma.api.extend(applet, $data);
+
+			Brahma.api.extendBeta(applet, Brahma.module({
+				
+			}));
+
 			if (typeof $data.config == 'object') applet.config = Brahma.api.extend(applet.config, $data.config);
 
 			Brahma.applets[name] = applet;
-			
+
 			
 			if (!name) return this;
 			else return Brahma.applets[name];
@@ -1304,14 +1372,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			};
 					
 			var plug = new wid();
+			plug = Brahma.module(plug);
 			Brahma.api.extend(plug, Brahma.applets[arguments[0]]);
-			plug = Brahma.module(plug).setConfig({
-				name : arguments[0]
-			});			
-							
-			plug.elements = this;
 			plug.config = Brahma.api.extendRecursive(plug.config, options);
-			
+
+			plug.elements = this;
 			
 			plug.classname = arguments[0];
 			

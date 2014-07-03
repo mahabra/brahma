@@ -1002,4 +1002,4 @@ Brahma('brahma.transit', function() {
 			};
 		}
 	});
-});
+}, ['brahma.jquerybridge']);

@@ -9,15 +9,16 @@ Copyright (C) 2014 Vladimir Kalmykov
 */
 	
 	Brahma.applet('curve', {
-		options: {
-				'strokeStyle': 'rgba(0,0,0,0)',
+		config: {
+				'strokeStyle': 'rgba(255,0,0,0)',
 				'lineWidth': 3,
-				'fillStyle': '#000000',
+				'fillStyle': '#ffffff',
 				'debug-fillStyle': 'rgba(255, 144, 0, 0.5)',
-				'drawframe': 0.01
+				'drawframe': 0.01,
+				'font': "bold 10px Arial"
 		},
 		current: {
-			debug: false,
+			debug: true,
 			test: 123
 		},
 		init : function() {
@@ -48,18 +49,18 @@ Copyright (C) 2014 Vladimir Kalmykov
 				alert('error');
 			};
 			
-			this.ctx.strokeStyle = this.options.strokeStyle; // ÷вет обводки
-			this.ctx.lineWidth = this.options.lineWidth; // Ўирина линии
-			this.ctx.fillStyle = this.options.fillStyle; // ÷вет заливки
+			this.ctx.strokeStyle = this.config.strokeStyle; // ÷вет обводки
+			this.ctx.lineWidth = this.config.lineWidth; // Ўирина линии
+			this.ctx.fillStyle = this.config.fillStyle; // ÷вет заливки
 		},
 		debug : function() {
 			this.current.debug = true;
 			return this;
 		},
 		setStyle : function(fillStyle, strokeStyle, lineweight) {
-			var fillStyle = fillStyle || this.options.fillStyle;
-			var strokeStyle = strokeStyle || this.options.strokeStyle;
-			var lineweight = lineweight || this.options.lineWidth;
+			var fillStyle = fillStyle || this.config.fillStyle;
+			var strokeStyle = strokeStyle || this.config.strokeStyle;
+			var lineweight = lineweight || this.config.lineWidth;
 			this.ctx.fillStyle = fillStyle;
 			this.ctx.strokeStyle = strokeStyle;
 			this.ctx.lineWidth = lineweight;
@@ -79,7 +80,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 				
 				this.ctx.lineTo(x, y);
 				
-				t+=this.options.drawframe;
+				t+=this.config.drawframe;
 			};
 			this.ctx.stroke();
 			this.ctx.closePath();
@@ -126,7 +127,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 				
 				this.ctx.lineTo(x, y);
 				
-				t+=this.options.drawframe;
+				t+=this.config.drawframe;
 			};
 			
 			this.ctx.stroke();
@@ -136,7 +137,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 				// ! рисуем точки
 				this.drawCheckpoints.apply(this, arguments);
 				// ! рисуем направл€ющие
-				this.setStyle(this.options['debug-fillStyle'], this.options['debug-fillStyle'], 2);
+				this.setStyle(this.config['debug-fillStyle'], this.config['debug-fillStyle'], 2);
 				this.linear(P0x, P0y, arguments[2], arguments[3]);
 				this.linear(arguments[2], arguments[3], P1x, P1y);
 				this.setStyle();
@@ -159,7 +160,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 				
 				this.ctx.lineTo(x, y);
 				
-				t+=this.options.drawframe;
+				t+=this.config.drawframe;
 			};
 			
 			this.ctx.lineTo(P3x, P3y);
@@ -172,7 +173,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 				// ! рисуем точки
 				this.drawCheckpoints.apply(this, arguments);
 				// ! рисуем направл€ющие
-				this.setStyle(this.options['debug-fillStyle'], this.options['debug-fillStyle'], 2);
+				this.setStyle(this.config['debug-fillStyle'], this.config['debug-fillStyle'], 2);
 				this.linear(P0x, P0y, P1x, P1y);
 				this.linear(P3x, P3y, P2x, P2y);
 				this.setStyle();
@@ -190,7 +191,7 @@ Copyright (C) 2014 Vladimir Kalmykov
 			  	counterclockwise: false
 			  };
 			  if (typeof arguments[0] == 'object') {
-			  	options = Miracle.api.extend(options, arguments[0]);
+			  	options = Brahma.api.extend(options, arguments[0]);
 			  } else {
 			  	var ui = 0;
 			  	for (var i in options) {
@@ -207,6 +208,40 @@ Copyright (C) 2014 Vladimir Kalmykov
 		      
 		     
 		      this.ctx.stroke();
+
+		      return this;
+		},
+		// Doesnt work. Need fork!
+		ellipse : function(options) {
+			  var options = Brahma.api.extend({
+			  	x: 0, 
+			  	y: 0,
+			  	width: 1,
+			  	height: 1,
+			  	center: false
+			  }, options || {});
+			  if (options.center) {
+			  	options.x -= options.width/2; options.y -= options.width/2;
+			  };
+
+			  var kappa = .5522848,
+			      ox = (options.width / 2) * kappa, // control point offset horizontal
+			      oy = (options.height / 2) * kappa, // control point offset vertical
+			      xe = options.x + options.width,           // x-end
+			      ye = options.y + options.height,           // y-end
+			      xm = options.x + options.width / 2,       // x-middle
+			      ym = options.y + options.height / 2;       // y-middle
+
+
+
+			  this.ctx.beginPath();
+			  this.ctx.moveTo(options.x, ym);
+			  this.ctx.bezierCurveTo(options.x, ym - oy, xm - ox, options.y, xm, options.y);
+			  this.ctx.bezierCurveTo(xm + ox, options.y, xe, ym - oy, xe, ym);
+			  this.ctx.bezierCurveTo(xe, ym + oy, xm + ox, ye, xm, ye);
+			  this.ctx.bezierCurveTo(xm - ox, ye, options.x, ym + oy, options.x, ym);
+			  this.ctx.closePath(); // not used correctly, see comments (use to close off open path)
+			  this.ctx.stroke();
 		},
 		bezier2D : function() {
 			if (arguments.length<8) return this;
@@ -226,6 +261,11 @@ Copyright (C) 2014 Vladimir Kalmykov
 				this.ctx.fill();					
 				this.ctx.closePath();
 			};
+		},
+		text : function(text,x,y) {
+			this.ctx.font = this.config.font;
+			this.ctx.fillText(text, x, y);
+			return this;
 		},
 		clear : function() {
 			

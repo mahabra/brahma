@@ -4,6 +4,11 @@ Brahma('brahma.trigonometria', function() {
 			trinatur : function(num) {
 				return num;
 			},
+			angle : function(angle) {
+				if (angle<0) angle = 360-angle;
+				if (angle>360) angle -= 360;
+				return angle;
+			},
 			de_ra : function(de) {
 				var pi = Math.PI;
 				var de_ra = (de*(pi/180));
@@ -74,6 +79,10 @@ Brahma('brahma.trigonometria', function() {
 				};
 				return num;
 			}, 
+			nature : function(num) {
+				if (num<0) num = 0;
+				return Math.abs(num);
+			},
 			distX: function(radius, radian) {
 				return this.disrotation(radian, radius);
 			},

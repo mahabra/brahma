@@ -671,6 +671,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	/* brahma.api */	
 	window.Brahma.api = {};
 	
+	window.Brahma.api.parseCss = function(optionsup) {
+		if (typeof optionsup != "string") return {};
+		var optionsup = optionsup.split("\n").join('').split("\t").join('');
+		if (optionsup.length<1) return {};
+		var optionsup = optionsup.split(';')
+		var options = {};
+		for (var o in optionsup) {
+			var op = optionsup[o].split(':');
+			options[op[0]] = op[1];
+		};
+
+		return options;
+	};
+
 	window.Brahma.api.rand = function(min, max) {
 		var rand = min - 0.5 + Math.random()*(max-min+1)
 		return  Math.round(rand);
@@ -1040,16 +1054,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 							/* Return if already initialized */
 							if (Brahma.api.hasAttribute(this, 'ui-initialized')) return this; 
 
-							var optionsup = Brahma.api.hasAttribute(this, directAttrName) ? this.getAttribute(directAttrName) : this.getAttribute(dataAttrName);
 							/* Interpret */
-							var optionsup = optionsup.split(';')
-							var options = {};
-							for (var o in optionsup) {
-								var op = optionsup[o].split(':');
-								options[op[0]] = op[1];
-							};
-
-
+							var options = Brahma.api.parseCss(Brahma.api.hasAttribute(this, directAttrName) ? this.getAttribute(directAttrName) : this.getAttribute(dataAttrName));
+							
 							uil.trigger('beforeParse', [this, widget]);
 							this.setAttribute("ui-initialized", "true");
 							Brahma.executeWidget.call(this, widget, uil.widgets[widget], options);
@@ -1209,9 +1216,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					}
 				},
 				options: {},
+				/* after initialing widget must call this function to make widget visible */
 				ready: function() {
-					console.log('ready');
 					$(this.selector).css("visibility", "visible");
+				},
+				tuning: {
+
 				},
 				manual: function(options) {
 					

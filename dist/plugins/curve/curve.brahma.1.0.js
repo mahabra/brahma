@@ -1,13 +1,4 @@
-/*!
- * brahma Curve Plugin
- *
- * Version 1.0.
- *
- * Released under the MIT license:
-
-Copyright (C) 2014 Vladimir Kalmykov
-*/
-	
+Brahma('brahma-curve', function() {
 	Brahma.applet('curve', {
 		config: {
 				'strokeStyle': 'rgba(255,0,0,0)',
@@ -283,3 +274,4 @@ Copyright (C) 2014 Vladimir Kalmykov
 		}
 		
 	});
+});

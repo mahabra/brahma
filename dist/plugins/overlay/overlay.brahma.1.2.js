@@ -4,7 +4,7 @@ content - string | function
 overlayBackgroundColor
 */
 
-Brahma('brahma.overlay', function() {
+Brahma('brahma-overlay', function() {
 	
 	Brahma.applet('overlay',
 	{
@@ -36,13 +36,17 @@ Brahma('brahma.overlay', function() {
 		wrappers : {
 			content : null
 		},
+		z: {
+			overlay: 0,
+			panel: 0
+		},
 		execute : function() {	
 			
 			// Initial effects
 			this.effects.applet = this;
 			
 			this.context = this.getContext();
-			if (this.config.freezeWrapper) this.freezeWrapper();
+			
 			this.newOverlay(this.context);
 			this.appendContent();
 			if (this.config.autoshow) this.show();
@@ -74,7 +78,7 @@ Brahma('brahma.overlay', function() {
 
 			var that = this;
 			var callback = callback;
-			setTimeout(callback, 100);
+			if (typeof callback == "function") setTimeout(callback, 100);
 
 			var body = $("body");
 			/* remember scrollTop */
@@ -112,7 +116,7 @@ Brahma('brahma.overlay', function() {
 				'left': 0,
 				'width': contextTagName=='BODY' ? '100%' : $(this.context).width(),
 				'height': contextTagName=='BODY' ? '100%' : $(this.context).height(),
-				'overflow': 'hidden'
+				'overflow': 'hidden',
 			});
 			
 			/* wrap freezed to another DIV to make fixed scroll */
@@ -146,8 +150,6 @@ Brahma('brahma.overlay', function() {
 		},
 		newOverlay : function(context) {
 			var plugin = this;
-			// > get Zindex
-			var zindex = Brahma.document.zindex.get();
 			
 			// > build Nodes
 			this.wrappers.overlay = $(context).put($('<div />', {
@@ -162,9 +164,13 @@ Brahma('brahma.overlay', function() {
 				'backgroundColor': 'none',
 				'backgroundImage': 'none',
 				'display': 'none',
-				'overflow': 'auto',
-				'z-index': zindex
+				'overflow-y': 'auto',
+				'overflow-x': 'hidden'
 			}, this.config.overlay.style));
+
+			/* get z index for this */
+			this.z.overlay = Brahma.document.zindex.get(1);
+			$(this.wrappers.overlay).css("z-index", this.z.overlay);
 
 			// > build first TABLE
 			this.wrappers.table = $(this.wrappers.overlay).put($('<table />', {
@@ -186,11 +192,15 @@ Brahma('brahma.overlay', function() {
 			})
 			.tie(function() {
 
+				/* get z index for this */
+				plugin.z.panel = Brahma.document.zindex.get(1);
+
 				plugin.wrappers.contentWrapper = $(this).put($('<div />')).css(plugin.config.panel.style).hide()
 				.condition(plugin.config["class"], function(c) {
 					$(this).addClass(c);
 					return this; 
-				}, function() { return this; });
+				}, function() { return this; })
+				.css("z-index", plugin.z.panel);
 
 				// shift from clent Border
 				if (plugin.config.clientBorderMargin) {
@@ -209,6 +219,11 @@ Brahma('brahma.overlay', function() {
 		show : function() {
 
 			var applet = this;
+			/*
+			Freeze
+			*/
+			if (this.config.freezeWrapper) this.freezeWrapper();
+
 			/*
 			Show overlay
 			*/
@@ -253,13 +268,24 @@ Brahma('brahma.overlay', function() {
 		},
 		html : function() {
 			if (arguments.length<1) {
-				return this.wrappers.content;
+				switch(typeof arguments[0]) {
+					case 'function':
+						arguments[0].call(this, this.wrappers.content);
+						return this;
+					break;
+					default:
+						return this.wrappers.content;
+					break;
+				}
+				
 			} else {
 				this.wrappers.content.html(arguments[0]);
 			}
 		},
 		hide: function(callback) {
 			this.trigger('beforeHide'); // < trigger
+			// Unfreeze
+			if (this.config.freezeWrapper) this.unfreezeWrapper();
 			var callback = callback;
 			var applet = this;
 			switch(this.config.effect.type) {
@@ -298,9 +324,11 @@ Brahma('brahma.overlay', function() {
 		},
 		remove : function() {
 			this.trigger('beforeDestroy'); // < trigger
+			// free z index
 			$(this.wrappers.content).remove();
-			if (this.config.freezeWrapper) this.unfreezeWrapper();
 			$(this.wrappers.overlay).remove();
+			Brahma.document.zindex.free(this.z.overlay);
+			Brahma.document.zindex.free(this.z.panel);
 			this.destroy();
 		},
 		destroy : function() {

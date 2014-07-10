@@ -1,4 +1,4 @@
-Brahma('brahma.clipboard', function() {
+Brahma('brahma-clipboard', function() {
 
 	Brahma.clipboard = {
 		set: function() {

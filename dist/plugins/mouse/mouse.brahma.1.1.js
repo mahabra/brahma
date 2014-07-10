@@ -1,6 +1,5 @@
-
-Brahma('brahma.mouse', function() {
-
+Brahma('brahma-mouse', function() {
+	
 	Brahma.applet('mouse', {
 		execute: function() {
 			var that = this;
@@ -86,4 +85,4 @@ Brahma('brahma.mouse', function() {
 			
 		}
 	})
-}, 'jquerybridge');
+}, 'brahma-jquerybridge');

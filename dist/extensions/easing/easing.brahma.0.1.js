@@ -1,4 +1,4 @@
-Brahma('brahma.easing', function() {
+Brahma('brahma-easing', function() {
 
 	Brahma.easing = {
 		linear: function (t) { return t },

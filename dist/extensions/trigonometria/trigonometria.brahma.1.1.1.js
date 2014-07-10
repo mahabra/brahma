@@ -1,4 +1,4 @@
-Brahma('brahma.trigonometria', function() {
+Brahma('brahma-trigonometria', function() {
 		
 		this.trigonometria = {
 			trinatur : function(num) {

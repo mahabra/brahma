@@ -433,4 +433,4 @@ Brahma('brahma.overlay', function() {
 		}
 	});
 
-}, ['brahma.jquerybridge', 'brahma.trigonometria', 'brahma.transit']);
+}, ['brahma-jquerybridge', 'brahma-trigonometria', 'brahma.transit']);

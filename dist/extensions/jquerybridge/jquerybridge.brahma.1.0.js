@@ -1,6 +1,6 @@
 /* brahma as jQuery plugin */
 
-Brahma('brahma.jquerybridge', function() {
+Brahma('brahma-jquerybridge', function() {
 	
 	jQuery.Brahma = window.jQuery.fn.Brahma = function(callback) {
 			

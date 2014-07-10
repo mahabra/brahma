@@ -3533,7 +3533,7 @@ Brahma.url = {
 };
 /* brahma as jQuery plugin */
 
-Brahma('brahma.jquerybridge', function() {
+Brahma('brahma-jquerybridge', function() {
 	
 	jQuery.Brahma = window.jQuery.fn.Brahma = function(callback) {
 			
@@ -3591,7 +3591,7 @@ Brahma('brahma.jquerybridge', function() {
 	};
 	
 }, ['jquery']);
-Brahma('brahma.trigonometria', function() {
+Brahma('brahma-trigonometria', function() {
 		
 		this.trigonometria = {
 			trinatur : function(num) {
@@ -4415,7 +4415,6 @@ Brahma('brahma.overlay', function() {
 				duration: options.duration || 450
 			}, options || {});
 
-			console.log(startX, startY);
 			Brahma(this.applet.wrappers.contentWrapper).applet('transit')
 			.jump({
 				x: startX,
@@ -4445,7 +4444,7 @@ Brahma('brahma.overlay', function() {
 		}
 	});
 
-}, ['brahma.jquerybridge', 'brahma.trigonometria', 'brahma.transit']);
+}, ['brahma-jquerybridge', 'brahma-trigonometria', 'brahma.transit']);
 
 Brahma.applet("touch", {
 
@@ -5341,7 +5340,7 @@ Brahma('brahma.transit', function() {
 					});
 
 			} else {
-					console.log(options);
+					
 					$(this.elements).transit(options, 0);
 			}
 		},

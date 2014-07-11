@@ -1,0 +1,8 @@
+{
+	"require": {
+		"brahma": {
+			"extensions": ["jquerybridge","trigonometria"],
+			"plugins": ["curve","mouse"]
+		}
+	}
+}

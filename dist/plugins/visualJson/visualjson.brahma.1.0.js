@@ -279,4 +279,4 @@ Brahma('brahma.visualjson', function() {
 			
 		}
 	});
-}, ['brahma-jquerybridge', 'brahma.curve']);
+}, ['brahma-trigonometria', 'brahma-jquerybridge', 'brahma.curve', 'brahma.mouse']);

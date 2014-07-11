@@ -400,7 +400,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			});
 		};
 		this.detainedReady = function(extensionName) {
-
+			
 			if (this.defined.indexOf(extensionName) < 0) 
 			this.defined.push(extensionName);
 
@@ -442,6 +442,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		};
 		this.require = function(amd, callback) {
 			
+			
 			var that = this;
 			var amd = amd;
 			if (typeof require == 'function') {
@@ -478,7 +479,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			for (var i = 0; i<amd.length;i++) {
 				// check the name exists in detained
 				
-				 if (this.detained.indexOf(amd[i])<0) this.defined.push(amd[i]);
+				 if (this.detained.indexOf(amd[i])<0) {
+				 	
+				 	this.defined.push(amd[i]);
+				 };
 			};
 
 			
@@ -746,6 +750,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			
 			return elem[0].innerHTML = html;
 		});
+	};
+
+	window.Brahma.find = window.Brahma.ext.find = function() {
+		return Brahma.bench.call(this, arguments, function(elem, options) {
+			
+			var nodelist = Sizzle('INPUT[name=mode],TEXTAREA[name=mode],SELECT[name=mode]', Brahma(elem)[0]);
+			
+			return nodelist;
+		});		
 	};
 	
 	/* brahma.domReady */
@@ -1268,7 +1281,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 						break;
 					}
 
-					console.log('widgets', this.widgets);
 
 					this.relisten();
 					return this;

@@ -1,4 +1,4 @@
-Brahma('brahma-curve', function() {
+Brahma('brahma.curve', function() {
 	Brahma.applet('curve', {
 		config: {
 				'strokeStyle': 'rgba(255,0,0,0)',

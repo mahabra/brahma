@@ -28,7 +28,7 @@ Brahma('brahma-jquerybridge', function($) {
 	};
 	
 	jQuery.and = Brahma.and = jQuery.fn.and = Brahma.ext.and = function(obj) {
-		return $(obj).appendTo(this.parent());
+		return $(obj).insertAfter(this);
 	};
 
 	jQuery.condition = jQuery.fn.condition = Brahma.condition = Brahma.ext.condition = function(condit, onTrue, onFalse) {

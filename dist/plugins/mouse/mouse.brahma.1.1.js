@@ -1,4 +1,4 @@
-Brahma('brahma-mouse', function() {
+Brahma('brahma.mouse', function() {
 	
 	Brahma.applet('mouse', {
 		execute: function() {

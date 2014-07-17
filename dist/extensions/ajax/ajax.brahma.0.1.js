@@ -66,7 +66,7 @@ Brahma('brahma-ajax', function() {
 		this.__perform = function(options) {
 
 			var options = $.extend(this.options, options);
-			
+			console.log('ajax', options);
 			this.request = $.ajax(options);
 		};
 

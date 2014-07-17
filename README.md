@@ -13,4 +13,4 @@ Compilate any build on  http://brahmajs.com/builder/
 Author & developer: Vladimir Kalmykov - http://vladimirkalmykov.com
 
 ### Easy to use
-Get pretty widgets on http://brahmajs.com/widgets/
+Get pretty widgets on http://brahmajs.com/factory/

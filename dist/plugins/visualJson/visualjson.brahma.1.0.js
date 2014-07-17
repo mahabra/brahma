@@ -21,8 +21,11 @@ Brahma('brahma.visualjson', function() {
 					};
 				};
 			}, ['brahma.curve']);
+			// Refresh
+			this.update();
 		},
 		update : function() {
+
 			this.json = {};
 			for (var i in this.config.rules) {
 				var rule = this.config.rules[i];
@@ -165,6 +168,8 @@ Brahma('brahma.visualjson', function() {
 				}), rule, that.config.source[name]);
 				
 			});
+			
+			this.update();
 		},
 		humanJson: function($json, $flag) {
 			var $flag = $flag || false;

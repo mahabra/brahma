@@ -9,78 +9,141 @@ Brahma('brahma-curve', function() {
 				'font': "bold 10px Arial"
 		},
 		current: {
-			debug: true,
-			test: 123
+			debug: false,
+			wrapperWidth: 0,
+			wrapperHeight: 0
 		},
-		init : function() {
-			// Проверяем является ли объект типом Canvas
+		saves: {
+
+		},
+		records: [],
+		execute: function() {
+			// initial html
+			this.initHtml();
+
+			// initial variables
+			this.refresh();
+
+			// > Listen to global events
+			Brahma.document.translateEvents(this, ['window.resize']);
+
+			// Refresh HTML on window resize
+			this.bind('window.resize', function(e) {
+
+				this.watchHtml();
+				this.refresh();
+				this.replay();
+			});
 			
+			return this;
+		},
+		initHtml: function() {
+			var that = this;
 			if (Brahma(this.elements)[0].tagName.toUpperCase() != 'CANVAS') {
-				
+		
 				this.canvas = Brahma(this.elements).put('<canvas />');
-				
-				this.canvas.css({
-					'width': Brahma(this.elements).width(),
-					'height': Brahma(this.elements).height()
-				}).attr({
-					'width': Brahma(this.elements).width(),
-					'height': Brahma(this.elements).height()
-				})
 				
 				this.canvas = this.canvas[0];
 				
 			} else {
 				this.canvas = Brahma(this.elements)[0];
-			};				
-			
-			// Проверяем понимает ли браузер canvas
+			};	
+
+			this.watchHtml();
+
 			if (this.canvas.getContext) {
-				this.ctx = this.canvas.getContext('2d'); // Получаем 2D контекст
-			} else {
-				alert('error');
-			};
+
+				this.ctx = this.canvas.getContext('2d'); // ГЏГ®Г«ГіГ·Г ГҐГ¬ 2D ГЄГ®Г­ГІГҐГЄГ±ГІ
+			};		
+		},
+		watchHtml : function() {
+			var that = this;
+			this.current.width = Brahma(this.elements).width();
+			this.current.height = Brahma(this.elements).height();
 			
-			this.ctx.strokeStyle = this.config.strokeStyle; // Цвет обводки
-			this.ctx.lineWidth = this.config.lineWidth; // Ширина линии
-			this.ctx.fillStyle = this.config.fillStyle; // Цвет заливки
+			Brahma(this.canvas).css({
+				'width': this.current.width,
+				'height': this.current.height
+			}).attr({
+				'width': this.current.width,
+				'height': this.current.height
+			}).with(function() {
+				this[0].width = that.current.width;
+				this[0].height = that.current.height;
+			});
+		},
+		/* initial programm by configuration */
+		refresh: function(keys) {
+
+			this.setStyle();
 		},
 		debug : function() {
 			this.current.debug = true;
 			return this;
 		},
-		setStyle : function(fillStyle, strokeStyle, lineweight) {
+		saveConfig : function(name) {
+			this.saves[name] = this.config;
+			return this;
+		},
+		loadConfig : function(name) {
+			if ("object" == typeof this.saves[name]) this.config = this.saves[name];
+			this.refresh();
+			return this;
+		},
+		setStyle : function(fillStyle, strokeStyle, lineweight, font) {
 			var fillStyle = fillStyle || this.config.fillStyle;
 			var strokeStyle = strokeStyle || this.config.strokeStyle;
 			var lineweight = lineweight || this.config.lineWidth;
+
 			this.ctx.fillStyle = fillStyle;
 			this.ctx.strokeStyle = strokeStyle;
 			this.ctx.lineWidth = lineweight;
 			return this;
 		},
+		record : function(callback) {
+			this.records.push(callback);
+			callback.apply(this);
+		},
+		replay : function() {
+			for (var r =0;r<this.records.length;r++)
+			this.records[r].apply(this);
+		},
+		magicCoords : function(coords, callback) {
+			var means = 0; // 0 - x; 1 - y;
+			for (var i = 0;i<coords.length;i++) {
+				coords[i] = (means==0) ? Brahma.api.percentEq(coords[i], this.current.width) : Brahma.api.percentEq(coords[i], this.current.height);
+				means++; if (means>1) means = 0;
+			};
+			if ("function" == typeof callback)
+			callback.apply(this, coords);
+			return coords;
+		},
 		linear : function(P0x, P0y, P1x, P1y) {
 			
+			this.magicCoords([P0x, P0y, P1x, P1y], function(P0x, P0y, P1x, P1y) {
+				this.ctx.beginPath();
+				this.ctx.moveTo(P0x, P0y); // ГЌГ Г·Г Г«Г® Г«ГЁГ­ГЁГЁ 
+				
+				var t = 0;		
+				while ( t<=1 ) {
+					
+					var x = (1 - t) * P0x + (t * P1x);
+					var y = (1 - t) * P0y + (t * P1y);
+					
+					this.ctx.lineTo(x, y);
+					
+					t+=this.config.drawframe;
+				};
+				this.ctx.stroke();
+				this.ctx.closePath();
+				
+				if (this.current.debug) {
+					// ! Г°ГЁГ±ГіГҐГ¬ ГІГ®Г·ГЄГЁ
+					this.drawCheckpoints.apply(this, arguments);
+					
+				};
+			});
 			
-			this.ctx.beginPath();
-			this.ctx.moveTo(P0x, P0y); // Начало линии 
-			
-			var t = 0;		
-			while ( t<=1 ) {
-				
-				var x = (1 - t) * P0x + (t * P1x);
-				var y = (1 - t) * P0y + (t * P1y);
-				
-				this.ctx.lineTo(x, y);
-				
-				t+=this.config.drawframe;
-			};
-			this.ctx.stroke();
-			this.ctx.closePath();
-			
-			if (this.current.debug) {
-				// ! рисуем точки
-				this.drawCheckpoints.apply(this, arguments);
-				
-			};
 			return this;
 		},
 		quadratic : function() {
@@ -96,7 +159,7 @@ Brahma('brahma-curve', function() {
 			var P1y = arguments[arguments.length-1];
 			
 			this.ctx.beginPath();
-			this.ctx.moveTo(P0x, P0y); // Начало линии 
+			this.ctx.moveTo(P0x, P0y); // ГЌГ Г·Г Г«Г® Г«ГЁГ­ГЁГЁ 
 			
 			while ( t<=1 ) {
 				
@@ -125,9 +188,9 @@ Brahma('brahma-curve', function() {
 			this.ctx.closePath();
 			
 			if (this.current.debug) {
-				// ! рисуем точки
+				// ! Г°ГЁГ±ГіГҐГ¬ ГІГ®Г·ГЄГЁ
 				this.drawCheckpoints.apply(this, arguments);
-				// ! рисуем направляющие
+				// ! Г°ГЁГ±ГіГҐГ¬ Г­Г ГЇГ°Г ГўГ«ГїГѕГ№ГЁГҐ
 				this.setStyle(this.config['debug-fillStyle'], this.config['debug-fillStyle'], 2);
 				this.linear(P0x, P0y, arguments[2], arguments[3]);
 				this.linear(arguments[2], arguments[3], P1x, P1y);
@@ -138,38 +201,48 @@ Brahma('brahma-curve', function() {
 		},
 		cubicBezier : function(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y) {
 			
+			this.magicCoords([P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y], function(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y) {
+				console.log('DATA', P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y);
+				var t = 0;	
 			
-			var t = 0;	
-			
-			this.ctx.beginPath();
-			this.ctx.moveTo(P0x, P0y); // Начало линии 
-			
-			while ( t<=1 ) {
+				this.ctx.beginPath();
+				this.ctx.moveTo(P0x, P0y); // ГЌГ Г·Г Г«Г® Г«ГЁГ­ГЁГЁ 
 				
-				var x = (Math.pow((1 - t), 3) * P0x) + (3 * Math.pow((1 - t), 2) * t * P1x) + (3* (1 - t) * Math.pow(t, 2) * P2x) + (Math.pow(t, 3) * P3x);
-				var y = (Math.pow((1 - t), 3) * P0y) + (3 * Math.pow((1 - t), 2) * t * P1y) + (3* (1 - t) * Math.pow(t, 2) * P2y) + (Math.pow(t, 3) * P3y);
+				while ( t<=1 ) {
+					
+					var x = (Math.pow((1 - t), 3) * P0x) + (3 * Math.pow((1 - t), 2) * t * P1x) + (3* (1 - t) * Math.pow(t, 2) * P2x) + (Math.pow(t, 3) * P3x);
+					var y = (Math.pow((1 - t), 3) * P0y) + (3 * Math.pow((1 - t), 2) * t * P1y) + (3* (1 - t) * Math.pow(t, 2) * P2y) + (Math.pow(t, 3) * P3y);
+					
+					this.ctx.lineTo(x, y);
+					
+					t+=this.config.drawframe;
+				};
 				
-				this.ctx.lineTo(x, y);
+				this.ctx.lineTo(P3x, P3y);
 				
-				t+=this.config.drawframe;
-			};
-			
-			this.ctx.lineTo(P3x, P3y);
-			
-			this.ctx.stroke();
-			this.ctx.closePath();
-			
-			
-			if (this.current.debug) {
-				// ! рисуем точки
-				this.drawCheckpoints.apply(this, arguments);
-				// ! рисуем направляющие
-				this.setStyle(this.config['debug-fillStyle'], this.config['debug-fillStyle'], 2);
-				this.linear(P0x, P0y, P1x, P1y);
-				this.linear(P3x, P3y, P2x, P2y);
-				this.setStyle();
-			};
-			
+				this.ctx.stroke();
+				this.ctx.closePath();
+				
+				
+				if (this.current.debug) {
+					this.saveConfig('active');
+					// ! Г°ГЁГ±ГіГҐГ¬ ГІГ®Г·ГЄГЁ
+					this.drawCheckpoints.apply(this, arguments);
+					// ! Г°ГЁГ±ГіГҐГ¬ Г­Г ГЇГ°Г ГўГ«ГїГѕГ№ГЁГҐ
+					this.setStyle(this.config['debug-fillStyle'], this.config['debug-fillStyle'], 2);
+					this.linear(P0x, P0y, P1x, P1y);
+					this.linear(P3x, P3y, P2x, P2y);
+					
+					this.set({
+						'font': '9px bold Arial'
+					});
+					this.text('['+P0x+','+P0y+']', P0x, P0y);
+					this.text('['+P1x+','+P1y+']', P1x, P1y);
+					this.text('['+P2x+','+P2y+']', P2x, P2y);
+					this.text('['+P3x+','+P3y+']', P3x, P3y);
+					this.loadConfig('active');
+				};
+			});
 			return this;
 		},
 		arc : function () {
@@ -192,7 +265,14 @@ Brahma('brahma-curve', function() {
 			  	};
 			  };
 
+			  // Convert percent to pixels
+			  var xy = this.magicCoords([options.x, options.y]);
+
+			  options.x = xy[0];
+			  options.y = xy[1];
+
 			  this.ctx.beginPath();
+			  
 		      this.ctx.arc(options.x, options.y, options.radius, options.sAngle, options.eAngle, options.counterclockwise);
 		     
 		      this.ctx.fill();
@@ -254,8 +334,12 @@ Brahma('brahma-curve', function() {
 			};
 		},
 		text : function(text,x,y) {
-			this.ctx.font = this.config.font;
-			this.ctx.fillText(text, x, y);
+			var text = text;
+			this.magicCoords([x,y], function(x,y) {
+				this.ctx.font = this.config.font;
+				this.ctx.fillText(text, x, y);
+			});
+			
 			return this;
 		},
 		clear : function() {
@@ -268,10 +352,9 @@ Brahma('brahma-curve', function() {
 			callback.call(this);
 			return this;
 		},
-		execute: function() {
-			this.init();
+		blur : function(deep) {
+			this.canvas.style.webkitFilter = "blur("+(deep||0)+"px)";
 			return this;
 		}
-		
 	});
 });

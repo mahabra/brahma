@@ -1028,6 +1028,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 						
 						this.config[key] = value;
 						this.trigger('reconfig', [key]);
+						if (typeof this.refresh  == "function") this.refresh([key]);
 					break;
 					case 'object':
 						var c = this.config;
@@ -1039,6 +1040,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 						};
 
 						this.trigger('reconfig', [keys]);
+						if (typeof this.refresh  == "function") this.refresh([keys]);
 					break;
 				}
 				return this;
@@ -1437,14 +1439,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				options: {},
 				/* after initialing widget must call this function to make widget visible */
 				ready: function() {
-
 					Brahma(this.selector).css("visibility", "visible");
 				},
 				tuning: {
 
 				},
 				manual: function(options) {
-					
 					var options = options;
 					Brahma(options.panel).applet('visualjson', {
 						rules: this.tuning,
@@ -1691,7 +1691,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			// > inside tie function
 			if (typeof arguments[2] == "function") {
 				arguments[2].apply(plug);
-			}
+			};
 
 			var result = plug.execute();
 			if (typeof result == 'undefined') return plug;
@@ -1755,18 +1755,104 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				return plug.execute();
 		};
 	};
-	
+
 	window.Brahma.plugin.prototype = {
 		constructor: window.Brahma.plugin
 	};
 	
 	/*
+	Brahma storage
+	*/
+	window.Brahma.storages = {};
+	window.Brahma.storage = function(name, data) {
+		if (typeof Brahma.storages[name] != "object") {
+
+			Brahma.storages[name] = Brahma.module({
+				____initialed: false,
+				initial: function(data) {
+
+					if (this.____initialed) return this;
+					
+					for (var i in data) {
+						this[i] = data[i];
+					};
+					this.____initialed = true;
+				}
+			});
+		};
+		return Brahma.storages[name];
+	}
+
+	/*
 	brahma document
 	*/
-	window.Brahma.document = {
-	
+	window.Brahma.document = Brahma.module({
+		eventCatchers: { // objects that catch events
+		}
+	});
+
+	/*
+		start event listners
+	*/
+	window.Brahma.document._startEventListing = function(e) {
+		var d = this;
+		var e = e;
+
+		// Create list for eventCatchers
+		("object" != typeof this.eventCatchers[e]) && (this.eventCatchers[e] = []);
+
+		// Add event listners
+		switch(e) {
+			case 'window.resize': // window resize
+				window.onresize = function() {
+					d.catchEvent(e, this, arguments);
+				};
+			break;
+		}
 	};
-	
+
+	/*
+		Catch event
+	*/
+	window.Brahma.document.catchEvent = function(event, element, args) {
+		// Classic event trigger
+		this.trigger(event, args);
+
+		// Give event to ctachers
+		if ("object" == typeof this.eventCatchers[event])
+			var etd=[];
+			for (var c = 0; c<this.eventCatchers[event].length; c++) {
+				if ("object" == typeof this.eventCatchers[event][c] && "function" == typeof this.eventCatchers[event][c].trigger)
+				this.eventCatchers[event][c].trigger(event, args);
+				else etd.push(c);
+			}
+			// Delete corrupt objects
+			(etd.length>0) && (function(c, etd) {
+				var nc = [];
+				for (var e=0;e<c.length;e++) {
+					if (etd.indexOf(e)<0) nc.push(c[e]);
+				};
+				c = nc;
+			})(this.eventCatchers[event], etd);
+	}
+
+	/*
+		add object to event relistners
+	*/
+	window.Brahma.document.translateEvents = function(handler, events) {
+		/* test for event exists */
+		for (var e = 0; e<events.length;e++) {
+			/* create event listner if not exists */
+			("object" != typeof this.eventListners[e]) && 
+			(function(e) {
+				var e = e;
+				this._startEventListing(e);				
+			}).call(this, events[e]);
+			/* append object to listners */
+			this.eventCatchers[events[e]].push()
+		};
+	}
+
 	/*
 	window.Brahma.document.uin
 	*/

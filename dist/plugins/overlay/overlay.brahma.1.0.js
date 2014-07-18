@@ -384,7 +384,7 @@ Brahma('brahma.overlay', function() {
 				duration: options.duration || 450
 			}, options || {});
 
-			console.log(startX, startY);
+			
 			Brahma(this.applet.wrappers.contentWrapper).applet('transit')
 			.jump({
 				x: startX,

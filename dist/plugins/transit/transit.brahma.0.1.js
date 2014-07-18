@@ -816,7 +816,7 @@ Brahma('brahma.transit', function() {
 					});
 
 			} else {
-					console.log(options);
+					
 					$(this.elements).transit(options, 0);
 			}
 		},

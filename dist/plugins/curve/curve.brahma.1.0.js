@@ -202,7 +202,7 @@ Brahma('brahma.curve', function() {
 		cubicBezier : function(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y) {
 			
 			this.magicCoords([P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y], function(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y) {
-				console.log('DATA', P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y);
+				
 				var t = 0;	
 			
 				this.ctx.beginPath();

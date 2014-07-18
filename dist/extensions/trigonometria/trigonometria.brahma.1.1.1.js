@@ -95,7 +95,7 @@ Brahma('brahma-trigonometria', function() {
 				var hangle = this.delta2sc(matrixw/2, focusd, 90)['$B'];
 				
 				var areaw = this.delta2c1s(distantion, hangle, (90-hangle)).c;
-				//console.log(focusd, matrixw, distantion, '=', areaw);
+				
 				return areaw;
 			}
 		};

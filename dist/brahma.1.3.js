@@ -456,7 +456,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				) appget.push(amd[a]);
 			}
 			if (appget.length>0) {
-				console.log(Brahma.online.builder+'?appget='+appget.join(',')+'&dummy=');
 				Brahma(function() {
 
 					amdmodule.require(amd, callback, true);

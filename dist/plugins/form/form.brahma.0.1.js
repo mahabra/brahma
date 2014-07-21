@@ -182,8 +182,9 @@ Brahma("brahma.form", function() {
 				var c = 0;
 				for (var i in arr) { c++; };
 					var pro = 0;
-				while(typeof arr[c]!="undefined") { c++; pro++; if (pro>99) {  };
+				while(typeof arr[c]!="undefined") { c++; pro++; if (pro>99) {  }; };
 				arr[c] = value;
+				
 				return arr;
 			})(arr,value) : (function(arr,key,value) {
 				arr[key] = value;

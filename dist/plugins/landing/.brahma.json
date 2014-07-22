@@ -1,0 +1,6 @@
+{
+	"require": {
+		"extensions": "jquerybridge"
+	}
+	"depends": ["jquery"]
+}

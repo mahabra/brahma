@@ -175,16 +175,16 @@ Brahma("brahma.form", function() {
 			};
 			return obj;
 		},
-		/* to to object, doenst metter it is array of object */
+		/* to to object, doenst metter it is array of object */ 
 		pushToObject : function(arr, key, value) {
 			value==null && (value=key, key=false);
 			arr = key===false ? (function(arr,value) {
 				var c = 0;
 				for (var i in arr) { c++; };
-					var pro = 0;
+					var pro = 0; 
 				while(typeof arr[c]!="undefined") { c++; pro++; if (pro>99) {  }; };
 				arr[c] = value;
-				
+
 				return arr;
 			})(arr,value) : (function(arr,key,value) {
 				arr[key] = value;

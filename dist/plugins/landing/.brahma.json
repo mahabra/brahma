@@ -1,6 +1,7 @@
 {
 	"require": {
-		"extensions": "jquerybridge"
-	},
-	"depends": ["jquery"]
+		"brahma": {
+			"extensions": ["jquerybridge"]
+		}
+	}
 }

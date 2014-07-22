@@ -34,8 +34,8 @@ Brahma("brahma.landing", function() {
 			var wrapper = this.elements;
 			$.each(this.screens, function(id, data) {
 				var screen = $(wrapper).put($("<section />", {
-					id: id,
-					"class": "screen"
+					id: 'screen_'+id,
+					"class": "screen "+id
 				}));
 				
 				$(screen).load(applet.config.baseUrl+data.name+'.'+data.filetype, function() {

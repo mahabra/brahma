@@ -1,7 +1,8 @@
 {
 	"require": {
 		"brahma": {
-			"extensions": ["jquerybridge"]
+			"extensions": ["jquerybridge"],
+			"plugins": ["overlay"]
 		}
 	}
 }

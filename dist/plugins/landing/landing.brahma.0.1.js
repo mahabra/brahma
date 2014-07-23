@@ -1,4 +1,9 @@
 Brahma("brahma.landing", function() {
+	Brahma.landing = Brahma.ext.landing = function(options) { 
+		"object"!=typeof options && (options=={});
+		return Brahma(this).applet("landing", options);
+	};
+
 	Brahma.applet("landing", {
 		config: {
 			baseUrl:  "",

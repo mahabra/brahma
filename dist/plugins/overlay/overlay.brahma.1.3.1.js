@@ -28,7 +28,8 @@ Brahma('brahma.overlay', function() {
 			"class": false,
 			freezeWrapper: true,
 			clientBorderMargin: false, // at start make shift from cleint border
-			autoshow: true // autoshow after creating
+			autoshow: true, // autoshow after creating,
+			duration: 450 // Default duration of effects
 		},
 		current: {
 			backup: {}
@@ -296,6 +297,7 @@ Brahma('brahma.overlay', function() {
 
 		},
 		hide: function(callback) {
+
 			this.trigger('beforeHide'); // < trigger
 			// Unfreeze
 			if (this.config.freezeWrapper) this.unfreezeWrapper();
@@ -320,10 +322,13 @@ Brahma('brahma.overlay', function() {
 					});
 				break;
 				default:
-					$(applet.wrappers.overlay).fadeOut();
 					
-					applet.trigger('hide');
-					if (typeof callback == "function") callback.apply(applet);
+					$(applet.wrappers.overlay).animate({
+						opacity: 0
+					}, this.config.duration, function() {
+						applet.trigger('hide');
+						if (typeof callback == "function") callback.apply(applet);
+					});
 				break;
 			}
 		},

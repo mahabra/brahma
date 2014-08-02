@@ -29,7 +29,8 @@ Brahma('brahma.overlay', function() {
 			freezeWrapper: true,
 			clientBorderMargin: false, // at start make shift from cleint border
 			autoshow: true, // autoshow after creating,
-			duration: 450 // Default duration of effects
+			duration: 450, // Default duration of effects
+			zIndex: false
 		},
 		current: {
 			backup: {}
@@ -170,7 +171,7 @@ Brahma('brahma.overlay', function() {
 			}, this.config.overlay.style));
 
 			/* get z index for this */
-			this.z.overlay = Brahma.document.zindex.get(1);
+			this.z.overlay = this.config.zIndex ? this.config.zIndex : Brahma.document.zindex.get(2);
 			$(this.wrappers.overlay).css("z-index", this.z.overlay);
 
 			// > build first TABLE
@@ -194,7 +195,7 @@ Brahma('brahma.overlay', function() {
 			.tie(function() {
 
 				/* get z index for this */
-				plugin.z.panel = Brahma.document.zindex.get(1);
+				plugin.z.panel = this.config.zIndex ? this.config.zIndex+1 : Brahma.document.zindex.get(1);
 
 				plugin.wrappers.contentWrapper = $(this).put($('<div />')).css(plugin.config.panel.style).hide()
 				.condition(plugin.config["class"], function(c) {
@@ -345,8 +346,10 @@ Brahma('brahma.overlay', function() {
 			// free z index
 			$(this.wrappers.content).remove();
 			$(this.wrappers.overlay).remove();
-			Brahma.document.zindex.free(this.z.overlay);
-			Brahma.document.zindex.free(this.z.panel);
+			if (!this.config.zIndex) {
+				Brahma.document.zindex.free(this.z.overlay);
+				Brahma.document.zindex.free(this.z.panel);
+			};
 			this.destroy();
 		},
 		destroy : function() {

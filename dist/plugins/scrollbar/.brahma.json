@@ -1,0 +1,8 @@
+{
+	"require": {
+		"brahma": {
+			"extensions": ["jquerybridge","disableselection"],
+			"plugins": ["wheel"]
+		}
+	}
+}

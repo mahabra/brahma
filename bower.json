@@ -10,6 +10,9 @@
     "amd",
     "globals"
   ],
+  "ignore": [
+    "dirty"
+  ],
   "keywords": [
     "brahmajs",
     "brahma"

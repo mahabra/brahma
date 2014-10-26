@@ -6,11 +6,13 @@ Visit project page: http://brahmajs.com/
 
 ## Getting Started
 
-Get lasted compiled version on http://brahmajs.com/code/brahma.js
-Compilate any build on  http://brahmajs.com/builder/
+Get via Bower:
+```npm
+bower install brahma
+```
 
 ### Author
 Author & developer: Vladimir Kalmykov - http://vladimirkalmykov.com
 
-### Easy to use
-Get pretty widgets on http://brahmajs.com/factory/
+### Attention
+Brahma library on the web site http://brahmajs.com is deprecated for a time.

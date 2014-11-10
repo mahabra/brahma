@@ -1406,7 +1406,7 @@
 			Brahma.utility.extend(plug, Brahma.utility.clone(Brahma.components[arguments[0]]));
 			plug.config = Brahma.utility.extendRecursive(plug.config, options);
 
-			plug.elements = this;
+			plug.elements = plug.selector = this;
 			
 			plug.classname = arguments[0];
 			

@@ -1,4 +1,4 @@
-Brahma
+BrahmaJs
 ====
 Is very young project. Brahmajs is a platform for develop widgets and Front-end applications. Main idea is to reject of the jQuery and the formation own semis. I'm not in a hurry to make it special. It just supports my needs.
 

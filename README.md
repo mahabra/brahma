@@ -1,6 +1,6 @@
 Brahma
 ====
-### Javascript framework for creating visual components library & widget's packages.
+### Javascript framework for creating awesome
 
 Visit project page: http://brahmajs.com/
 

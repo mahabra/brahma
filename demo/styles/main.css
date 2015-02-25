@@ -1,0 +1,99 @@
+@import url(http://fonts.googleapis.com/css?family=Roboto:500,100,300,400&subset=latin,cyrillic);
+
+body {
+	background:url(../images/bg.jpg) top center no-repeat #000000;
+	margin:0px;
+	padding:42px 0 106px 0;
+	font-family:"Roboto","Arial";
+	font-weight: 100;
+	height:130%;
+}
+
+.container {
+	
+	height: 130%;
+	position: absolute;
+	width: 100%;
+}
+
+#logo {
+	position:absolute;
+	width:100%;
+	top:0px;
+	left:0px;
+}
+
+.container > section#content {
+	-webkit-transition:transform 0.2s ease;
+	-ms-transition:transform 0.2s ease;
+	transition:transform 0.2s ease;
+	position: absolute;
+	top:50%;
+	width:100%;
+}
+
+.container div.row {
+	min-width:900px;
+	display: table;
+	margin:0 auto;
+}
+
+
+.container div.row > img {
+	display:block;
+	margin:0 auto;
+}
+
+
+.container div.row #biglogo {
+	margin:0 auto 35px auto;
+	display:block;
+	-webkit-transition:transform 0.2s ease;
+	-ms-transition:transform 0.2s ease;
+	transition:transform 0.2s ease;
+}
+
+.container div.row #textlogo {
+	margin:0 auto 15px auto;
+}
+
+.container div.row summary {
+	font-family:"Roboto","Arial";
+	font-size:26px;
+	color:#ffffff;
+	font-weight:100;
+	min-width:100%;
+	display:block;
+	text-align:center;
+}
+
+.container div.row summary a {
+	color:#ff4723;
+	text-decoration: none;
+}
+
+.container div.row#descript {
+	margin:0 auto 112px auto;
+}
+
+.container div.row#copyrights > summary {
+	font-size:16px;
+	color:#ffffca;
+	font-weight:300;
+	text-align:center;
+}
+
+.container div.row > a.download {
+	text-decoration: none;
+	
+	background-color:#ff4723;
+	line-height:54px;
+	padding:0 10px;
+	color:#fff;
+	font-size:17px;
+	font-weight: 600;
+	text-align:center;
+	display:table;
+	margin:0 auto 20px auto;
+	border-radius: 10px;
+}

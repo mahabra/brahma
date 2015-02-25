@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>BrahmaJs — Javascript factory lib</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Javascript фреймворк для разработки виджетов и front-end приложений">
+	<meta name="keywords" content="brahma framework">
+
+	<link rel="stylesheet" href="demo/styles/main.css">
+	<script type="text/javascript" src="demo/vendor.js" baseurl="/" no-bowerrc></script>
+	<script type="text/javascript" src="dist/brahma.js"></script>
+	<script type="text/javascript" src="demo/scripts/beautify.js"></script>
+</head>
+<body>
+	<div class="container">
+		<div class="row" id="logo"><img src="demo/images/biglogo.png" alt="" id="biglogo"></div>
+		<section id="content">
+			<div class="row"><img src="demo/images/brahmajs-text.png" alt="" id="textlogo"></div>
+			<div class="row" id="descript">
+				<summary class="shady">Платформа для разработки Front-end приложений.</summary>
+			</div>
+			<div class="row"><a href="brahma.min.js" download class="download">DOWNLOAD  Brahma.min.js v.<span id="version">x.x.x</span> (<span id="size">x</span>kb)</a></div>
+			<div class="row" id="copyrights">
+				<summary>
+					Copyrights © Vladimir Kalmykov (<a href="https://github.com/morulus" alt="@morulus">@morulus</a>) 2014-2015, <a href="https://github.com/morulus/brahma/blob/master/LICENSE.md">MIT</a>
+				</summary>
+			</div>
+		</section>
+	</div>
+</body>
+<script>
+vendor.load('brahma.min.js', function(data) {
+	Brahma("#size").html(Math.round(data.length/1024));
+});
+vendor.getJson('bower.json', function(data) {
+	Brahma("#version").html(data.version);
+});
+</script>
+</html>

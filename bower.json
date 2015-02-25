@@ -1,22 +1,29 @@
 {
-  "name": "brahma.overlay",
-  "version": "1.0.1",
+  "name": "brahma",
+  "version": "1.3.0",
   "authors": [
     "Morulus <vladimirmorulus@gmail.com>"
   ],
-  "description": "Library for creating widgets and visual components",
+  "description": "Library for creating widgets and front-end apps",
   "main": "brahma.js",
   "moduleType": [
     "amd",
     "globals"
   ],
   "ignore": [
-    "dirty"
+    ".dvlp"
   ],
   "keywords": [
     "brahmajs",
-    "brahma"
+    "brahma",
+    "framework"
   ],
   "license": "MIT",
-  "homepage": "http://brahmajs.com"
+  "homepage": "http://morulus.github.io/brahma/",
+  "ignore": [
+  	".dvlp",
+  	"test",
+  	"demo",
+  	"index.html"
+  ]
 }

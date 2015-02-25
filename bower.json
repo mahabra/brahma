@@ -5,10 +5,8 @@
     "Morulus <vladimirmorulus@gmail.com>"
   ],
   "description": "Library for creating widgets and front-end apps",
-  "main": "brahma.js",
+  "main": "brahma.min.js",
   "moduleType": [
-    "amd",
-    "globals"
   ],
   "ignore": [
     ".dvlp"

@@ -1,15 +1,12 @@
 {
   "name": "brahma",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "authors": [
     "Morulus <vladimirmorulus@gmail.com>"
   ],
   "description": "Library for creating widgets and front-end apps",
   "main": "brahma.min.js",
   "moduleType": [
-  ],
-  "ignore": [
-    ".dvlp"
   ],
   "keywords": [
     "brahmajs",
@@ -22,6 +19,7 @@
   	".dvlp",
   	"test",
   	"demo",
-  	"index.html"
+  	"index.html",
+  	"dirty"
   ]
 }

@@ -95,6 +95,16 @@ Brahma.core.and = function() {
 	});
 };
 
+Brahma.core.condition = function(condit, onTrue, onFalse) {
+	if (condit) {
+		if (typeof onTrue == 'function') return onTrue.call(this, condit);
+		return this;
+	} else {
+		if (typeof onFalse == 'function') return onFalse.call(this);
+		return this;
+	};
+}
+
 Brahma.core.wrapAll = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var wrap = Brahma(elem[0].parentNode);

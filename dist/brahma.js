@@ -1,4 +1,4 @@
-/*
+/* 
 IE не поддерживает scope: в querySelector, поэтому требуется альтернативное решение.
 Решение найдено здесь: https://github.com/lazd/scopedQuerySelectorShim
 */
@@ -760,6 +760,16 @@ Brahma.core.and = function() {
 		}
 	});
 };
+
+Brahma.core.condition = function(condit, onTrue, onFalse) {
+	if (condit) {
+		if (typeof onTrue == 'function') return onTrue.call(this, condit);
+		return this;
+	} else {
+		if (typeof onFalse == 'function') return onFalse.call(this);
+		return this;
+	};
+}
 
 Brahma.core.wrapAll = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {

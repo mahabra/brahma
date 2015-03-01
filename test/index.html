@@ -110,6 +110,16 @@
 			assert.equal(window.testready, true, "DOM ready!");
 			start();
 		});
-	})
+	});
+
+	QUnit.test("test modules", function( assert ) {
+		var app1 = Brahma.app('test1', {
+			a: 123
+		});
+		var app2 = Brahma.app('test2', {
+			a: 456
+		});
+		assert.equal(app2.a+app1.a, 579, "prototypes different");
+	});
 </script>
 </html>

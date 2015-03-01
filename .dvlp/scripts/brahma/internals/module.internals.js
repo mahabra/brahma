@@ -46,11 +46,9 @@
 						if ("function"==typeof Brahma.classes.module.internals[internals[i]].initial) Brahma.classes.module.internals[internals[i]].initial.call(module);
 					}
 				}
-				Brahma.extend(constructor.prototype, options);
-				constructor.prototype.master = this;
-				constructor.prototype.constructor = constructor;
 
 				var module = new constructor();
+				Brahma.extend(module, options);
 				module.master = this;
 
 				return module;

@@ -54,5 +54,5 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
 
 
-  grunt.registerTask('default', ['watch', 'snipper', 'uglify']);
+  grunt.registerTask('default', ['snipper', 'uglify', 'watch']);
 };

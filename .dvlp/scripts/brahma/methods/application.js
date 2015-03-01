@@ -48,7 +48,7 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 
 		// > Test for plugin exists
 		if (typeof Brahma.apps.modules[arguments[0]] != 'object') {
-			throw('Brahma: require `'+arguments[0]+'` application. Visit '+Brahma.info.homesite+' to download it.');
+			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
 		}
 
 		// > We can give options to life elemnt

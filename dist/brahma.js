@@ -630,7 +630,7 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 
 		// > Test for plugin exists
 		if (typeof Brahma.apps.modules[arguments[0]] != 'object') {
-			throw('Brahma: require `'+arguments[0]+'` application. Visit '+Brahma.info.homesite+' to download it.');
+			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
 		}
 
 		// > We can give options to life elemnt
@@ -958,8 +958,7 @@ Brahma.core.scroll = function() {
 };
 
 	Brahma.caniuse = function(test) {
-	console.log('Brahma.caniuse.info[test]', Brahma.caniuse.info[test]);
-	if ("function"===typeof Brahma.caniuse.info[test]) Brahma.caniuse.info[test] = Brahma.caniuse.info[test]();
+	if (Brahma.caniuse.info[test] && "function"===typeof Brahma.caniuse.info[test]) Brahma.caniuse.info[test] = Brahma.caniuse.info[test]();
 	if (Brahma.caniuse.info[test]) return Brahma.caniuse.info[test]; else return false;
 };
 Brahma.caniuse.info = {

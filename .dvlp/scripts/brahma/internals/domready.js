@@ -9,7 +9,6 @@
  *
  * URL:
  * http://javascript.nwbox.com/ContentLoaded/
- * http://javascript.nwbox.com/ContentLoaded/MIT-LICENSE
  *
  */
 (function (win, fn) {

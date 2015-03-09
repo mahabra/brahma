@@ -1,8 +1,5 @@
-/* Создаем фабрику приложений */
-Brahma.apps.addFabric('default', ['events','tie'], function() {
-	
-});
-Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = function(widgetName) {
+Brahma.applications.addFabric('default',['events','fabrics'], function() {});
+Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application = function(applicationName) {
 	if (this === window || typeof this == 'function') {
 		// > name of component
 		var name = arguments[0];
@@ -15,8 +12,8 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 				break;
 				case 'string': // copy
 					var copy = arguments[1];
-					if (typeof Brahma.apps.modules[copy] != 'undefined') {
-						$data = Brahma.extend({}, Brahma.apps.modules[copy]);
+					if (typeof Brahma.applications.modules[copy] != 'undefined') {
+						$data = Brahma.extend({}, Brahma.applications.modules[copy]);
 					} else {
 						$data = {};
 					};
@@ -31,23 +28,23 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 		};
 
 		// > return component protptype if exists
-		if (name && typeof Brahma.apps.modules[name] != 'undefined') return Brahma.extend(Brahma.apps.modules[name], $data);
+		if (name && typeof Brahma.applications.modules[name] != 'undefined') return Brahma.extend(Brahma.applications.modules[name], $data);
 
 		// merge with $data and make it Brahma module
-		var component = Brahma.apps.create('default', $data);
+		var component = Brahma.applications.create('default', $data);
 		/*
 		Этот момент нужно ещё протестировать, но нам нужно дополнительно дописать конфигурацию, потому что это протестировано.
 		*/
 		if (typeof $data.config === 'object') component.config = Brahma.extend(component.config, $data.config);
 
-		Brahma.apps.modules[name] = component;
+		Brahma.applications.modules[name] = component;
 		
 		if (!name) return this;
-		else return Brahma.apps.modules[name];
+		else return Brahma.applications.modules[name];
 	} else {
 
 		// > Test for plugin exists
-		if (typeof Brahma.apps.modules[arguments[0]] != 'object') {
+		if (typeof Brahma.applications.modules[arguments[0]] != 'object') {
 			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
 		}
 
@@ -57,7 +54,7 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 		var constructor = function() {
 		};
 		
-		constructor.prototype = Brahma.apps.modules[arguments[0]];
+		constructor.prototype = Brahma.applications.modules[arguments[0]];
 		constructor.prototype.constructor = constructor;
 		var plug = new constructor();
 		plug.config = Brahma.extend(plug.config, options, true);
@@ -80,6 +77,6 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 	}
 }
 /* Выполняет приложение без передачи каких либо данных в качестве scope. Аналогично конструкции Brahma(window).app(appName) */
-Brahma.run = function(appName) {
+Brahma.application.run = function(appName) {
 	return Brahma(window).app(appName);
 }

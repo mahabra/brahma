@@ -11,15 +11,17 @@
 	'fabrics': {
 		proto: {
 			fabrics: {},
+			modules: {},
 			/**
 			@method addFabric
 			Модули способны содержать фабрики. Фабрики модулей вызываются с помощью функции create(fabricName, internals, proto) 
 			Т.е. фабрику, вместе со всеми настройками расширений можно задать заранее, но создать объект по этой схеме можно будет позже.
 			*/
-			addFabric : function(name, internals, constructor) {
+			addFabric : function(name, internals, constructor, proto) {
 				this.fabrics[name] = {
-					constructor: constructor,
-					internals: internals
+					constructor: constructor||function(){},
+					internals: internals,
+					proto: proto||{}
 				};
 				return this;
 			},
@@ -27,31 +29,35 @@
 			@method create
 			Процес создание модуля фабрикой идентичен с процессом создания модуля модулем
 			*/
-			create: function(fabricName, options) {
-
-				var constructor = this.fabrics[fabricName].constructor;
-				constructor.prototype = Brahma.classes.module.proto;
-
-
-				/* Каждый модуль может быть снабжден расширениями */
-				var internals = this.fabrics[fabricName].internals;
+			create: function(fabricName, extend) {
 				
-				//if (internals.indexOf('modular')) internals.push('modular');
-				if (internals instanceof Array) {
-					for (var i = 0;i<internals.length;i++) {
-						if ("object"!==typeof Brahma.classes.module.internals[internals[i]]) return Brahma.die('There in no internal `'+internals[i]+'`');
+				var constructor = function(){};
+				
+				constructor.prototype = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
+				constructor.prototype.constructor = constructor;
+				var module = new constructor();
+				Brahma.extend(module, extend);
 
-						Brahma.extend(constructor.prototype, Brahma.classes.module.internals[internals[i]].proto);
+				module.master = this;
+				this.fabrics[fabricName].constructor.call(module);
+				return module;
+			},
+			/* Модуль устроен так, что его инициализация происходит только при его первом вызове, это исключает случай инициализации модуля в прототипе */
+			module: function(globalName) {
+				var 
+				initial=("function"===typeof arguments[2]) ? arguments[2] : ("function"===typeof arguments[1] ? arguments[1] : false),
+				data=("object"===typeof arguments[1]) ? arguments[1] : ("object"===typeof arguments[2] ? arguments[2] : false);
 
-						if ("function"==typeof Brahma.classes.module.internals[internals[i]].initial) Brahma.classes.module.internals[internals[i]].initial.call(module);
+				if (data||initial) {
+					// Создаем фабрику
+					this.addFabric(globalName, ['events'], initial, data||{});
+					return this;
+				} else {
+					if ("undefined"===typeof this.modules[globalName]) {
+						this.modules[globalName] = this.create(globalName);
 					}
 				}
-
-				var module = new constructor();
-				Brahma.extend(module, options);
-				module.master = this;
-
-				return module;
+				return this.modules[globalName];
 			}
 		}
 	},

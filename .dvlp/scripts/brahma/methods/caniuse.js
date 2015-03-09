@@ -3,9 +3,10 @@ Brahma.caniuse = function(test) {
 	if (Brahma.caniuse.info[test]) return Brahma.caniuse.info[test]; else return false;
 };
 Brahma.caniuse.info = {
+    /* dataset - определяет возможность использования dataset для получения аргументов data-* */
 	"dataset": (typeof document.createElement('div').dataset !== "undefined"),
+    /* translate3D - определяет возможность использования translate3D */
 	"translate3D": function() {
-		console.log('test 3D'); 
 		// https://gist.github.com/dryan/738720
 		// borrowed from modernizr
 		var div = document.createElement('div'),
@@ -34,5 +35,19 @@ Brahma.caniuse.info = {
             div.parentNode.removeChild(div);
         }
         return ret;
-	}
+	},
+    "mobile": function() {
+        var check = false;
+        var i = 0,
+         iOS = false,
+         iDevice = ['iPad', 'iPhone', 'iPod'];
+
+
+        for (;i < iDevice.length ; i++ ) {
+            if( navigator.platform === iDevice[i] ){ return true; break; }
+        }
+        (function(a,b){if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(a))check = true})(navigator.userAgent||navigator.vendor||window.opera);
+        
+        return check;
+    }
 };

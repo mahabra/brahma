@@ -1,6 +1,6 @@
 if (this === window) {
 	// OnAir   
-	var air = new window.Brahma();
+	var air = new Brahma();
 	
 	var callback = false;
 	var extensionName = false;

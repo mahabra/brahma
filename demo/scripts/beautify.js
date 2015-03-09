@@ -44,5 +44,5 @@ Brahma.app('beautify', {
 });
 
 Brahma(function() {
-	Brahma.run('beautify');
+	Brahma.app.run('beautify');
 });

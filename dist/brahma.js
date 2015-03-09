@@ -1,4 +1,4 @@
-/* 
+/*
 IE не поддерживает scope: в querySelector, поэтому требуется альтернативное решение.
 Решение найдено здесь: https://github.com/lazd/scopedQuerySelectorShim
 */
@@ -77,14 +77,39 @@ IE не поддерживает scope: в querySelector, поэтому тре�
     overrideNodeMethod(HTMLElement.prototype, 'querySelectorAll');
   }
 }());
+;(function() {
+	var BrahmaFactory; // Инициализируем факторию для использования внутри её же конструктора
 
-!(function(window) { 
-	
-	var currentQuerySelector = ("function"===typeof Sizzle) ? Sizzle : document.querySelectorAll;
-	window.Brahma = window.brahma = function(subject) { 
-		if (this === window) {
+	var BrahmaFactory = function(userConfig) {
+		/* Конфигурируем производство бибилиотеки */
+		var factoryConfig = {
+		};
+		if ("object"===typeof  userConfig) for (var i in userConfig) {
+			if (userConfig.hasOwnProperty(i)) {
+				factoryConfig[i] = userConfig[i];
+			}
+		};
+		/*
+			Инициализируем новую переменную
+		*/
+		var Brahma = null;
+		/*
+			Мы можем поддерживать Sizzle, если он присутсвует в глобальном контексте. Его можно подключить отдельно или вместе с Jquery.
+			Глобальная в scope переменная носит числовое значение, как маркер, где:
+			0 : использовать querySelectorAll
+			1 : использовать Sizzle
+
+			Данная переменная проверяется в функции Brahma.nodeQuery
+		*/
+		var currentQuerySelector = ("function"===typeof Sizzle) ? 1 : 0;
+
+		/*
+			Создаем конструктор
+		*/
+		Brahma = function(subject) { 
+			if (this === window) {
 	// OnAir   
-	var air = new window.Brahma();
+	var air = new Brahma();
 	
 	var callback = false;
 	var extensionName = false;
@@ -137,27 +162,41 @@ IE не поддерживает scope: в querySelector, поэтому тре�
 	
 	return air;
 }
-	};
+		};
 
-	Brahma.core = window.Brahma.prototype = {
-		constructor: window.Brahma
-	};
+		/*
+			И прототип
+		*/
+		Brahma.vector = Brahma.prototype = {
+			constructor: Brahma
+		};
 
-	Brahma.core.version = '2.0';
-	Brahma.core.brahma = true;
-	/* Информация о документе */
-	Brahma.document = {
-		ready: false
-	};
+		/*
+			Указываем версию
+		*/
+		Brahma.vector.version = '2.0';
+		/*
+			Над необходимо иметь данное свойство, что бы уметь отличать объекты Brahma от прочих
+		*/
+		Brahma.vector.brahma = true;
+		/*
+			Свойство document содержит информацию о текущем html-документе
+			@ready : полностью ли загружен документ
+		*/
+		Brahma.document = {
+			ready: false
+		};
 
-	// Brahma queries
-	/*
+		/*
+			Функционал обработки селекторов
+		*/
+		/*
 Приводит любую переменную к массиву.
 Отлично понимает массив Brahma объекты и jQuery объекты.
 Для объектов неопределнного типа идет простой перебор свойств (не включая прототипные свойства)
 Если же subject не объект, то он будет включен как элемент массива.
 */
-window.Brahma.bench = function(subject, args, tieback) {
+Brahma.bench = function(subject, args, tieback) {
 	
 	var  elements = [];
 	if ("object" === typeof subject) {
@@ -179,7 +218,7 @@ window.Brahma.bench = function(subject, args, tieback) {
 	return tieback.call(subject, elements, args);
 };
 	
-window.Brahma.nodeQuery = window.Brahma.core.nodeQuery = function(query, root) {
+Brahma.nodeQuery = Brahma.vector.nodeQuery = function(query, root) {
 	var prefix;
 	(root) ? (prefix=':scope ') : (prefix=''); 
 	var root = root||document;
@@ -199,14 +238,18 @@ window.Brahma.nodeQuery = window.Brahma.core.nodeQuery = function(query, root) {
 
 			if (queryExpr.exec(query) === null) {
 				if (query.length===0) return new Array();
-
-				try {
-					if (patch) console.log('QUERY', prefix+query);
-					return root.querySelectorAll(prefix+query);
-				} catch(e) {
-					console.log('Brahma: querySelectorAll not support query: '+query)
-				}
 				
+				if (currentQuerySelector===0) {
+					// Нативный селектор
+					try {
+						return root.querySelectorAll(prefix+query);
+					} catch(e) {
+						console.log('Brahma: querySelectorAll not support query: '+query)
+					}
+				} else if (currentQuerySelector===1) {
+					// Sizzle
+					return Sizzle(query, root);
+				}				
 			} else {
 				return [document.createElement(result[1].toUpperCase())];
 			};
@@ -245,8 +288,20 @@ window.Brahma.nodeQuery = window.Brahma.core.nodeQuery = function(query, root) {
 	};
 };
 
-	// Brahma api
-	/** 
+		/*
+			Базовый API
+		*/
+		/**
+@method camelCase
+change dashed string to camel case style string
+
+*/
+Brahma.camelCase = function(text) {
+	return text.replace(/-([\da-z])/gi, function( all, letter ) {
+		return letter.toUpperCase();
+	});
+};
+/** 
 @method clone
 Создает копию объекта, возвращая её.
 */
@@ -322,40 +377,52 @@ Brahma.die= function(a) {
 };
 
 
-	/* Классы и прототипы */
-	(Brahma.classes = {}) && (Brahma.classes.module = {
-		proto: (function() {
+		/**
+			## Классы
+			Brahma поддерживает возможность работы с большим количеством встроенных классов.
+
+			На данный момент поддерживается только module. Module - это универстальный прототип компонента, он может модифицироваться расширениями. Сам класс модуля содержится в ключе Brahma.classes.module.proto. Расширения располагаются в Brahma.classes.module.internals.
+
+			Конструктор модуля Brahma.classes.module.constructor должен быть вызван в контекте какого либо объекта. Он принимает два аргумента имя модуля и расширения. 
+			```
+			Brahma.classes.module.constructor(name, internals)
+			```
+			Имя модуля может быть не указано. Конструктор возвращает новый объект.
+			Новый объект имеет свойство master, которое ссылается на контекст, а так же добавляет в контекст в свойство modules ссылку на вновь созданный объект, если было указано имя.
+		*/
+		(Brahma.classes = {}) && (Brahma.classes.module = {
+			constructor: function() {
+	var name, internals;
+	("string"===typeof arguments[0]) ? (name=arguments[0],internals=arguments[1]||[]) : (name=false,internals=arguments[0]||[]);
+	
+	var constructor = function() {};
+	if (!Object.create) {
+		
+		constructor.prototype = Brahma.clone(Brahma.classes.module.proto);
+	} else {
+		
+		constructor.prototype = Object.create(Brahma.classes.module.proto.prototype);
+		constructor.prototype.constructor = constructor;
+	}
+	var module = new constructor();
+	module.master = this;
+	if (name) this.modules[name] = module;
+	/* Каждый модуль может быть снабжден расширениями */
+	if (internals instanceof Array) {
+		for (var i = 0;i<internals.length;i++) {
+			if ("object"!==typeof Brahma.classes.module.internals[internals[i]]) return Brahma.error('There in no internal `'+internals[i]+'`');
+
+			Brahma.extend(module, Brahma.classes.module.internals[internals[i]].proto);
+
+			if ("function"==typeof Brahma.classes.module.internals[internals[i]].initial) Brahma.classes.module.internals[internals[i]].initial.call(this.modules[name]);
+		}
+	}
+	return module;
+},
+			proto: (function() {
 	var proto = {};
 	proto.prototype = {
 		modules : {},
-		createModule : function() {
-			var name, internals;
-			("string"===typeof arguments[0]) ? (name=arguments[0],internals=arguments[1]||[]) : (name=false,internals=arguments[0]||[]);
-			console.log('create module', name, internals);
-			var constructor = function() {};
-			if (!Object.create) {
-				
-				constructor.prototype = Brahma.clone(Brahma.classes.module.proto);
-			} else {
-				
-				constructor.prototype = Object.create(Brahma.classes.module.proto.prototype);
-				constructor.prototype.constructor = constructor;
-			}
-			var module = new constructor();
-			module.master = this;
-			if (name) this.modules[name] = module;
-			/* Каждый модуль может быть снабжден расширениями */
-			if (internals instanceof Array) {
-				for (var i = 0;i<internals.length;i++) {
-					if ("object"!==typeof Brahma.classes.module.internals[internals[i]]) return Brahma.error('There in no internal `'+internals[i]+'`');
-
-					Brahma.extend(module, Brahma.classes.module.internals[internals[i]].proto);
-
-					if ("function"==typeof Brahma.classes.module.internals[internals[i]].initial) Brahma.classes.module.internals[internals[i]].initial.call(this.modules[name]);
-				}
-			}
-			return module;
-		},
 		/* Расширет модуль */
 		assing : function(dist) {
 			Brahma.extend(this, dist);
@@ -365,7 +432,7 @@ Brahma.die= function(a) {
 	return proto;
 })()
 ,
-		internals: {
+			internals: {
 	'tie': {
 		proto: {
 			tie: function(cb) {
@@ -378,15 +445,17 @@ Brahma.die= function(a) {
 	'fabrics': {
 		proto: {
 			fabrics: {},
+			modules: {},
 			/**
 			@method addFabric
 			Модули способны содержать фабрики. Фабрики модулей вызываются с помощью функции create(fabricName, internals, proto) 
 			Т.е. фабрику, вместе со всеми настройками расширений можно задать заранее, но создать объект по этой схеме можно будет позже.
 			*/
-			addFabric : function(name, internals, constructor) {
+			addFabric : function(name, internals, constructor, proto) {
 				this.fabrics[name] = {
-					constructor: constructor,
-					internals: internals
+					constructor: constructor||function(){},
+					internals: internals,
+					proto: proto||{}
 				};
 				return this;
 			},
@@ -394,31 +463,35 @@ Brahma.die= function(a) {
 			@method create
 			Процес создание модуля фабрикой идентичен с процессом создания модуля модулем
 			*/
-			create: function(fabricName, options) {
-
-				var constructor = this.fabrics[fabricName].constructor;
-				constructor.prototype = Brahma.classes.module.proto;
-
-
-				/* Каждый модуль может быть снабжден расширениями */
-				var internals = this.fabrics[fabricName].internals;
+			create: function(fabricName, extend) {
 				
-				//if (internals.indexOf('modular')) internals.push('modular');
-				if (internals instanceof Array) {
-					for (var i = 0;i<internals.length;i++) {
-						if ("object"!==typeof Brahma.classes.module.internals[internals[i]]) return Brahma.die('There in no internal `'+internals[i]+'`');
+				var constructor = function(){};
+				
+				constructor.prototype = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
+				constructor.prototype.constructor = constructor;
+				var module = new constructor();
+				Brahma.extend(module, extend);
 
-						Brahma.extend(constructor.prototype, Brahma.classes.module.internals[internals[i]].proto);
+				module.master = this;
+				this.fabrics[fabricName].constructor.call(module);
+				return module;
+			},
+			/* Модуль устроен так, что его инициализация происходит только при его первом вызове, это исключает случай инициализации модуля в прототипе */
+			module: function(globalName) {
+				var 
+				initial=("function"===typeof arguments[2]) ? arguments[2] : ("function"===typeof arguments[1] ? arguments[1] : false),
+				data=("object"===typeof arguments[1]) ? arguments[1] : ("object"===typeof arguments[2] ? arguments[2] : false);
 
-						if ("function"==typeof Brahma.classes.module.internals[internals[i]].initial) Brahma.classes.module.internals[internals[i]].initial.call(module);
+				if (data||initial) {
+					// Создаем фабрику
+					this.addFabric(globalName, ['events'], initial, data||{});
+					return this;
+				} else {
+					if ("undefined"===typeof this.modules[globalName]) {
+						this.modules[globalName] = this.create(globalName);
 					}
 				}
-
-				var module = new constructor();
-				Brahma.extend(module, options);
-				module.master = this;
-
-				return module;
+				return this.modules[globalName];
 			}
 		}
 	},
@@ -544,45 +617,78 @@ Brahma.die= function(a) {
 			}
 		}
 	}
-}
-	});
+},
+		});
 
-	/*
-	Расширяем internals.events сами на себя, т.к. сам объект Brahma должен поддерживать события
-	*/
-	Brahma.extend(Brahma, Brahma.classes.module.internals.events.proto);
+		/*
+			Расщирения класса Brahma.classes.module содержат весьма полезные функции, такие как поддержка событий.
+			Поэтому мы пользуемся имеющимся функционалом для расширения функционала самой Brahma, для того, что бы Brahma
+			поддерживал возможность работы с событями bind, trigger.
+		*/
+		Brahma.extend(Brahma, Brahma.classes.module.internals.events.proto);
 
-	/*
-	Индустрия Brahma позволяет создавать анонимные модули.
-	*/
-	Brahma.industry = (function() {
-		var constructor = function() {};
-		if (!Object.create) {
-			
-			constructor.prototype = Brahma.clone(Brahma.classes.module.proto);
-		} else {
-			
-			constructor.prototype = Object.create(Brahma.classes.module.proto.prototype);
-			constructor.prototype.constructor = constructor;
+		/**
+			## Brahma.industry
+			Индустрия Brahma позволяет создавать объекты из классов Brahma.
+			```
+			object Brahma.industry('module', ['events'], {
+				foo: 'bar'
+			});
+			```
+		*/
+		Brahma.industry = {
+			make: function(className, internals, extend) {
+				var newObject = Brahma.classes[className].constructor.call(false, internals||[]);
+				if ("object"===typeof extend) for (var i in extend){
+					if (extend.hasOwnProperty(i)) {
+						newObject[i] = extend[i];
+					}
+				}
+				return newObject;
+			}
 		}
-		var module = new constructor();
-		return module;
-	})(Brahma);
 
-	/* Инициализируем приложения */
-	Brahma.apps = Brahma.industry.createModule(['fabrics']);
-	
-	/**
-	@method application
-	Возвращает приложение, создает приложение или дополняет приложение.
-	Если приложения не существует, функция однозначно создает приложение. Если селектор не передан и функция существует, то функция дополняет приложение объектом из второго аргумента.
-	Если передан селектор, то приложение запускается через метод execute().
-	*/
-	/* Создаем фабрику приложений */
-Brahma.apps.addFabric('default', ['events','tie'], function() {
-	
-});
-Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = function(widgetName) {
+		/**
+			## brahma.applications
+
+			Виджеты в Brahma - это что-то вроде плагинов в jQuery. Они работают с элементами DOM. Вызов их происходит через контекст этого объекта, получаемого через селектор.
+			```
+			Brahma('body').application('screens');
+			```
+			В данном случае мы создали объект, содержищий ссылку на BODY. Далее мы вызываем обработчик screens, который будет выполнен, получив объект со ссылкой в переменной this.data.
+
+			Brahma так же поддерживаем передачу в this.data прочих объектов, например массива
+			Brahma([1,2,3]).application('screens');
+			Однако в большенстве случаев обработики требуют именно объекта Brahma с селектором DOM элементов.
+
+			!Надо обратить внимание, что Brahma.applications - это не массив и не одномерный объект, а фактически модуль, который содержит другие модули. Т.е. 
+			*/
+		Brahma.applications = Brahma.industry.make('module', ['fabrics']);
+		/**
+			## Brahma.application()
+			Функция application позволяет как создавать, так и управлять и вызывать приложения. Всё зависит от того в каком контексте она вызвана.
+
+			Когда мы вызывает функцию через объект Brahma, мы вызываем конструктор приложения:
+			``` 
+			Brahma.application('myapplication',{}) // Создаст приложение
+			Brahma.application('myapplication', {}) // Модифицирует существующее приложение
+			Brahma.application('myapplication') // Возвращает прототип приложения
+			```
+			Вызов приложения, когда оно нужно, происходит через объект vector, который создается при указаниии первого аргумента функции Brahma.
+			```
+			Brahma('div#go').application('myapplication'); // Создает экземпляр приложения и выполянет его
+
+			Для удобтва можно указывать краткое имя функции
+			Brahma('div#go').app('myapplication');
+
+			При создании экземпляра приложения можно передавать в него конфигурацию
+			Brahma('div#go').app('myapplication', {
+				duration: 5000
+			});
+			```
+		*/
+		Brahma.applications.addFabric('default',['events','fabrics'], function() {});
+Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application = function(applicationName) {
 	if (this === window || typeof this == 'function') {
 		// > name of component
 		var name = arguments[0];
@@ -595,8 +701,8 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 				break;
 				case 'string': // copy
 					var copy = arguments[1];
-					if (typeof Brahma.apps.modules[copy] != 'undefined') {
-						$data = Brahma.extend({}, Brahma.apps.modules[copy]);
+					if (typeof Brahma.applications.modules[copy] != 'undefined') {
+						$data = Brahma.extend({}, Brahma.applications.modules[copy]);
 					} else {
 						$data = {};
 					};
@@ -611,23 +717,23 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 		};
 
 		// > return component protptype if exists
-		if (name && typeof Brahma.apps.modules[name] != 'undefined') return Brahma.extend(Brahma.apps.modules[name], $data);
+		if (name && typeof Brahma.applications.modules[name] != 'undefined') return Brahma.extend(Brahma.applications.modules[name], $data);
 
 		// merge with $data and make it Brahma module
-		var component = Brahma.apps.create('default', $data);
+		var component = Brahma.applications.create('default', $data);
 		/*
 		Этот момент нужно ещё протестировать, но нам нужно дополнительно дописать конфигурацию, потому что это протестировано.
 		*/
 		if (typeof $data.config === 'object') component.config = Brahma.extend(component.config, $data.config);
 
-		Brahma.apps.modules[name] = component;
+		Brahma.applications.modules[name] = component;
 		
 		if (!name) return this;
-		else return Brahma.apps.modules[name];
+		else return Brahma.applications.modules[name];
 	} else {
 
 		// > Test for plugin exists
-		if (typeof Brahma.apps.modules[arguments[0]] != 'object') {
+		if (typeof Brahma.applications.modules[arguments[0]] != 'object') {
 			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
 		}
 
@@ -637,7 +743,7 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 		var constructor = function() {
 		};
 		
-		constructor.prototype = Brahma.apps.modules[arguments[0]];
+		constructor.prototype = Brahma.applications.modules[arguments[0]];
 		constructor.prototype.constructor = constructor;
 		var plug = new constructor();
 		plug.config = Brahma.extend(plug.config, options, true);
@@ -660,12 +766,14 @@ Brahma.app = Brahma.application = Brahma.core.app = Brahma.core.application = fu
 	}
 }
 /* Выполняет приложение без передачи каких либо данных в качестве scope. Аналогично конструкции Brahma(window).app(appName) */
-Brahma.run = function(appName) {
+Brahma.application.run = function(appName) {
 	return Brahma(window).app(appName);
 }
-
-	
-Brahma.core.html = function(html) {
+		/*
+			API в стиле jQuery, работа с элементами, создание элементов и пр.
+		*/
+		
+Brahma.vector.html = function(html) {
 	if ("undefined"===typeof html) {
 		if (this.length<=0) return null;
 		return this[0].innerHTML;
@@ -679,7 +787,7 @@ Brahma.core.html = function(html) {
 	});
 };
 
-Brahma.core.empty = function() {
+Brahma.vector.empty = function() {
 	return Brahma.bench(this, arguments, function(elem) {
 		for (var q = 0;q<elem.length;q++) {
 			elem[q].innerHTML = '';
@@ -688,7 +796,47 @@ Brahma.core.empty = function() {
 	});
 };
 
-Brahma.core.parent = function() {
+Brahma.vector.remove = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		for (var q = 0;q<elem.length;q++) {
+			elem[q].parentNode.removeChild(elem[q]);
+		}
+		return elem[q].parentNode;
+	});
+};
+
+/**
+@method replace
+Заменяет данный элемент другим элементом и опционально сохраняет data-аргументы и классы
+*/
+Brahma.vector.replace = function(newElement, preserveData) {
+	return Brahma.bench(this, arguments, function(elem, args) {
+		var queue = [];
+		for (var i=0;i<elem.length;i++) {
+			(function(e) {
+				if (preserveData) {
+					var className = e.className;
+					var data = {};
+					for (var d in e.dataset) {
+						if (e.dataset.hasOwnProperty(d)) data[d] = e.dataset[d];
+					};
+				};
+				queue.push(newElement.cloneNode());
+				e.parentNode.replaceChild(queue[queue.length-1], e);
+				
+				if (preserveData) {
+					for (var d in data) {
+						queue[queue.length-1].dataset[d] = data[d];
+					};
+					queue[queue.length-1].className = className;
+				};
+			})(elem[i]);
+		}
+		return Brahma(queue);
+	});
+}
+
+Brahma.vector.parent = function() {
 
 	return Brahma.bench(this, arguments, function(elem) {
 
@@ -697,7 +845,7 @@ Brahma.core.parent = function() {
 	});
 };
 
-Brahma.core.createNode = function(nodeName, attrs) {
+Brahma.vector.createNode = function(nodeName, attrs) {
 	var attrs = attrs||{};
 	try {
 		var newElement = document.createElement(nodeName);
@@ -713,7 +861,7 @@ Brahma.core.createNode = function(nodeName, attrs) {
 	return Brahma([newElement]);
 }
 
-Brahma.core.each = Brahma.each = function() {
+Brahma.vector.each = Brahma.each = function() {
 	var subject, callback;
 	(this instanceof Brahma) ? (subject = this, callback = arguments[0]||false) : (subject=arguments[0],callback=arguments[1]);
 	
@@ -727,7 +875,7 @@ Brahma.core.each = Brahma.each = function() {
 	});
 }
 
-Brahma.core.put = function() {
+Brahma.vector.put = function() {
 	var kit = [];
 
 	Brahma.bench(this, arguments, function(elem, args) {
@@ -750,7 +898,7 @@ Brahma.core.put = function() {
 	return Brahma(kit);
 };
 
-Brahma.core.and = function() {
+Brahma.vector.and = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		if (elem.length>0) {
 			var parent = Brahma(elem[0].parentNode);
@@ -761,7 +909,7 @@ Brahma.core.and = function() {
 	});
 };
 
-Brahma.core.condition = function(condit, onTrue, onFalse) {
+Brahma.vector.condition = function(condit, onTrue, onFalse) {
 	if (condit) {
 		if (typeof onTrue == 'function') return onTrue.call(this, condit);
 		return this;
@@ -771,7 +919,7 @@ Brahma.core.condition = function(condit, onTrue, onFalse) {
 	};
 }
 
-Brahma.core.wrapAll = function() {
+Brahma.vector.wrapAll = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var wrap = Brahma(elem[0].parentNode);
 		var node = wrap.createNode.apply(wrap, args);
@@ -783,12 +931,12 @@ Brahma.core.wrapAll = function() {
 	});
 }
 
-Brahma.core.find = function() {
+Brahma.vector.find = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var kit = [];
 		Brahma.each(elem, function() {
 			
-			var founds = window.Brahma.nodeQuery(args[0], this);
+			var founds = Brahma.nodeQuery(args[0], this);
 
 			if (founds.length) for (var i=0;i<founds.length;i++) {
 				kit.push(founds[i]);
@@ -800,7 +948,7 @@ Brahma.core.find = function() {
 }
 
 
-Brahma.core.tie = function(cb) {
+Brahma.vector.tie = function(cb) {
 	cb.call(this);
 	return this;
 }
@@ -817,7 +965,7 @@ Brahma.addEvent = function(elem, type, eventHandle) {
     }
 };
 
-Brahma.core.bind = function() {
+Brahma.vector.bind = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		for (var i=0;i<elem.length;i++) {
 		   	Brahma.addEvent(elem[0], args[0], args[1]);
@@ -826,7 +974,7 @@ Brahma.core.bind = function() {
 	});
 }
 
-Brahma.core.addClass = function() {
+Brahma.vector.addClass = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var stylename = args[0];
 		for (var i=0;i<elem.length;i++) {
@@ -837,7 +985,7 @@ Brahma.core.addClass = function() {
 	});
 }
 
-Brahma.core.removeClass = function() {
+Brahma.vector.removeClass = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var stylename = args[0];
 		for (var i=0;i<elem.length;i++) {
@@ -852,7 +1000,7 @@ Brahma.core.removeClass = function() {
 	});
 }
 
-Brahma.core.hasClass = function() {
+Brahma.vector.hasClass = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var stylename = args[0];
 		for (var i=0;i<elem.length;i++) {
@@ -865,56 +1013,36 @@ Brahma.core.hasClass = function() {
 }
 
 
-Brahma.core.css = function() {
-	var elem;
-	return Brahma.bench(this, arguments, function(elem, args) {
-		var data, polymorph=[];
-		("object"===typeof args[0]&&args[0] instanceof Array) ? (polymorph=args[0],data=args[1]):(data=args[0]);
-		
-		if (args.length>0) {
-			switch(typeof data) {
-				case 'object':
-					Brahma(elem).each(function() {
-						for (var i in data) {
-							if (polymorph.length!==0) for (var p = 0;p<polymorph.length;p++)
-							this.style[polymorph[p]+i] = data[i];
-							this.style[i] = data[i];
-						};	
-					});
-				break;
-				case "string":
-					if (args.length>1) {
-						Brahma(elem).each(function() {	
-							if (polymorph.length!==0) for (var p = 0;p<polymorph.length;p++)						
-							this.style[polymorph[p]+data] = args[1];
-						});
-						return this;
-					} else {
-						return elem[0].style[data];
-					}
-				break;
-				default:
-					return elem[0].style;
-				break;
-			};
+Brahma.vector.css = function() {
+	var data, polymorph=[];
+	("object"===typeof arguments[0]) ? ((arguments[0] instanceof Array) ? (polymorph=arguments[0],data=arguments[1]) : (data=arguments[0])) : ( (arguments.length>1) ? (data={},data[arguments[0]]=arguments[1]) : (data=arguments[0]) );
+	return Brahma.bench(this, [polymorph,data], function(elem, args) {
+		if ("object"===typeof args[1]) {
+			Brahma(elem).each(function() {
+				for (var i in data) {
+					if (polymorph.length!==0) for (var p = 0;p<polymorph.length;p++)
+					this.style[polymorph[p]+i] = data[i];
+					this.style[i] = data[i];
+				};	
+			});
 			return Brahma(elem);
 		} else {
-			return elem[0].style;
+			return elem[0].style[data];
 		};
-		return Brahma(elem);
 	});
 };
 
-Brahma.core.data = function() {
+Brahma.vector.data = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
+		var key = Brahma.camelCase(args[0]);
 		for (var i = 0;i<elem.length;i++) {
 			if (args.length>1) {
 				if (Brahma.caniuse('dataset'))
-				elem[i].dataset[args[0]] = args[1];
+				elem[i].dataset[key] = args[1];
 				else elem[i].setAttribute("data-"+args[0], args[1]);
 			} else {
 				if (Brahma.caniuse('dataset'))
-				return ("undefined"!==typeof elem[i].dataset[args[0]]) ? elem[i].dataset[args[0]] : null;
+				return ("undefined"!==typeof elem[i].dataset[key]) ? elem[i].dataset[key] : null;
 				else
 				return elem[i].getAttribute("data-"+args[0]);
 			}
@@ -923,7 +1051,7 @@ Brahma.core.data = function() {
 	});
 }
 
-Brahma.core.attr = function() {
+Brahma.vector.attr = function() {
 	var elem;
 	return Brahma.bench(this, arguments, function(elem, args) {
 		
@@ -958,21 +1086,37 @@ Brahma.core.attr = function() {
 	});
 };
 
-Brahma.core.scroll = function() {
+Brahma.vector.scroll = function() {
 	var doc = document.documentElement;
 	var left = (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
 	var top = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
 	return {left: left, top: top};
 };
 
-	Brahma.caniuse = function(test) {
+		/**
+			## Brahma.cultivate
+			Обеспечение фукнции воспроизводства самого себя. Используя функцию cultivate можно создать библиотеку, основанную на Brahma.
+			Стоит учитывать, что вновь созданная библиотека не будет включать в себя расширенный функционал, если таковой был подключен
+			дополнительно.
+		*/
+		Brahma.cultivate = function() {
+			return BrahmaFactory(false);
+		}
+
+		/**
+			## Brahma.caniuse
+			Это локальная процедура проверки допустимых для данного браузера или устройства, тех или иных возможностей.
+			Конечно, это очень ограниченная база знаний, тем не менее, необходимая.
+		*/
+		Brahma.caniuse = function(test) {
 	if (Brahma.caniuse.info[test] && "function"===typeof Brahma.caniuse.info[test]) Brahma.caniuse.info[test] = Brahma.caniuse.info[test]();
 	if (Brahma.caniuse.info[test]) return Brahma.caniuse.info[test]; else return false;
 };
 Brahma.caniuse.info = {
+    /* dataset - определяет возможность использования dataset для получения аргументов data-* */
 	"dataset": (typeof document.createElement('div').dataset !== "undefined"),
+    /* translate3D - определяет возможность использования translate3D */
 	"translate3D": function() {
-		console.log('test 3D'); 
 		// https://gist.github.com/dryan/738720
 		// borrowed from modernizr
 		var div = document.createElement('div'),
@@ -1001,13 +1145,27 @@ Brahma.caniuse.info = {
             div.parentNode.removeChild(div);
         }
         return ret;
-	}
+	},
+    "mobile": function() {
+        var check = false;
+        var i = 0,
+         iOS = false,
+         iDevice = ['iPad', 'iPhone', 'iPod'];
+
+
+        for (;i < iDevice.length ; i++ ) {
+            if( navigator.platform === iDevice[i] ){ return true; break; }
+        }
+        (function(a,b){if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(a))check = true})(navigator.userAgent||navigator.vendor||window.opera);
+        
+        return check;
+    }
 }; 
 
-	/*
-	Перехватываем глобальные события, такие как готовность документа
-	*/
-	/*!
+		/*
+			Перехватываем глобальные события, такие как готовность документа
+		*/
+		/*!
  * contentloaded.js
  *
  * Author: Diego Perini (diego.perini at gmail.com)
@@ -1018,7 +1176,6 @@ Brahma.caniuse.info = {
  *
  * URL:
  * http://javascript.nwbox.com/ContentLoaded/
- * http://javascript.nwbox.com/ContentLoaded/MIT-LICENSE
  *
  */
 (function (win, fn) {
@@ -1057,5 +1214,8 @@ Brahma.caniuse.info = {
 	Brahma.document.ready = true;
 	Brahma.trigger('domReady');
 });
+		return Brahma;
+	};
 
-})(window);
+	window.Brahma = BrahmaFactory();
+})();

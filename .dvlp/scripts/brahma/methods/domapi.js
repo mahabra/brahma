@@ -1,5 +1,5 @@
 
-Brahma.core.html = function(html) {
+Brahma.vector.html = function(html) {
 	if ("undefined"===typeof html) {
 		if (this.length<=0) return null;
 		return this[0].innerHTML;
@@ -13,7 +13,7 @@ Brahma.core.html = function(html) {
 	});
 };
 
-Brahma.core.empty = function() {
+Brahma.vector.empty = function() {
 	return Brahma.bench(this, arguments, function(elem) {
 		for (var q = 0;q<elem.length;q++) {
 			elem[q].innerHTML = '';
@@ -22,7 +22,47 @@ Brahma.core.empty = function() {
 	});
 };
 
-Brahma.core.parent = function() {
+Brahma.vector.remove = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		for (var q = 0;q<elem.length;q++) {
+			elem[q].parentNode.removeChild(elem[q]);
+		}
+		return elem[q].parentNode;
+	});
+};
+
+/**
+@method replace
+Заменяет данный элемент другим элементом и опционально сохраняет data-аргументы и классы
+*/
+Brahma.vector.replace = function(newElement, preserveData) {
+	return Brahma.bench(this, arguments, function(elem, args) {
+		var queue = [];
+		for (var i=0;i<elem.length;i++) {
+			(function(e) {
+				if (preserveData) {
+					var className = e.className;
+					var data = {};
+					for (var d in e.dataset) {
+						if (e.dataset.hasOwnProperty(d)) data[d] = e.dataset[d];
+					};
+				};
+				queue.push(newElement.cloneNode());
+				e.parentNode.replaceChild(queue[queue.length-1], e);
+				
+				if (preserveData) {
+					for (var d in data) {
+						queue[queue.length-1].dataset[d] = data[d];
+					};
+					queue[queue.length-1].className = className;
+				};
+			})(elem[i]);
+		}
+		return Brahma(queue);
+	});
+}
+
+Brahma.vector.parent = function() {
 
 	return Brahma.bench(this, arguments, function(elem) {
 
@@ -31,7 +71,7 @@ Brahma.core.parent = function() {
 	});
 };
 
-Brahma.core.createNode = function(nodeName, attrs) {
+Brahma.vector.createNode = function(nodeName, attrs) {
 	var attrs = attrs||{};
 	try {
 		var newElement = document.createElement(nodeName);
@@ -47,7 +87,7 @@ Brahma.core.createNode = function(nodeName, attrs) {
 	return Brahma([newElement]);
 }
 
-Brahma.core.each = Brahma.each = function() {
+Brahma.vector.each = Brahma.each = function() {
 	var subject, callback;
 	(this instanceof Brahma) ? (subject = this, callback = arguments[0]||false) : (subject=arguments[0],callback=arguments[1]);
 	
@@ -61,7 +101,7 @@ Brahma.core.each = Brahma.each = function() {
 	});
 }
 
-Brahma.core.put = function() {
+Brahma.vector.put = function() {
 	var kit = [];
 
 	Brahma.bench(this, arguments, function(elem, args) {
@@ -84,7 +124,7 @@ Brahma.core.put = function() {
 	return Brahma(kit);
 };
 
-Brahma.core.and = function() {
+Brahma.vector.and = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		if (elem.length>0) {
 			var parent = Brahma(elem[0].parentNode);
@@ -95,7 +135,7 @@ Brahma.core.and = function() {
 	});
 };
 
-Brahma.core.condition = function(condit, onTrue, onFalse) {
+Brahma.vector.condition = function(condit, onTrue, onFalse) {
 	if (condit) {
 		if (typeof onTrue == 'function') return onTrue.call(this, condit);
 		return this;
@@ -105,7 +145,7 @@ Brahma.core.condition = function(condit, onTrue, onFalse) {
 	};
 }
 
-Brahma.core.wrapAll = function() {
+Brahma.vector.wrapAll = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var wrap = Brahma(elem[0].parentNode);
 		var node = wrap.createNode.apply(wrap, args);
@@ -117,12 +157,12 @@ Brahma.core.wrapAll = function() {
 	});
 }
 
-Brahma.core.find = function() {
+Brahma.vector.find = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var kit = [];
 		Brahma.each(elem, function() {
 			
-			var founds = window.Brahma.nodeQuery(args[0], this);
+			var founds = Brahma.nodeQuery(args[0], this);
 
 			if (founds.length) for (var i=0;i<founds.length;i++) {
 				kit.push(founds[i]);
@@ -134,7 +174,7 @@ Brahma.core.find = function() {
 }
 
 
-Brahma.core.tie = function(cb) {
+Brahma.vector.tie = function(cb) {
 	cb.call(this);
 	return this;
 }
@@ -151,7 +191,7 @@ Brahma.addEvent = function(elem, type, eventHandle) {
     }
 };
 
-Brahma.core.bind = function() {
+Brahma.vector.bind = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		for (var i=0;i<elem.length;i++) {
 		   	Brahma.addEvent(elem[0], args[0], args[1]);
@@ -160,7 +200,7 @@ Brahma.core.bind = function() {
 	});
 }
 
-Brahma.core.addClass = function() {
+Brahma.vector.addClass = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var stylename = args[0];
 		for (var i=0;i<elem.length;i++) {
@@ -171,7 +211,7 @@ Brahma.core.addClass = function() {
 	});
 }
 
-Brahma.core.removeClass = function() {
+Brahma.vector.removeClass = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var stylename = args[0];
 		for (var i=0;i<elem.length;i++) {
@@ -186,7 +226,7 @@ Brahma.core.removeClass = function() {
 	});
 }
 
-Brahma.core.hasClass = function() {
+Brahma.vector.hasClass = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		var stylename = args[0];
 		for (var i=0;i<elem.length;i++) {
@@ -199,56 +239,36 @@ Brahma.core.hasClass = function() {
 }
 
 
-Brahma.core.css = function() {
-	var elem;
-	return Brahma.bench(this, arguments, function(elem, args) {
-		var data, polymorph=[];
-		("object"===typeof args[0]&&args[0] instanceof Array) ? (polymorph=args[0],data=args[1]):(data=args[0]);
-		
-		if (args.length>0) {
-			switch(typeof data) {
-				case 'object':
-					Brahma(elem).each(function() {
-						for (var i in data) {
-							if (polymorph.length!==0) for (var p = 0;p<polymorph.length;p++)
-							this.style[polymorph[p]+i] = data[i];
-							this.style[i] = data[i];
-						};	
-					});
-				break;
-				case "string":
-					if (args.length>1) {
-						Brahma(elem).each(function() {	
-							if (polymorph.length!==0) for (var p = 0;p<polymorph.length;p++)						
-							this.style[polymorph[p]+data] = args[1];
-						});
-						return this;
-					} else {
-						return elem[0].style[data];
-					}
-				break;
-				default:
-					return elem[0].style;
-				break;
-			};
+Brahma.vector.css = function() {
+	var data, polymorph=[];
+	("object"===typeof arguments[0]) ? ((arguments[0] instanceof Array) ? (polymorph=arguments[0],data=arguments[1]) : (data=arguments[0])) : ( (arguments.length>1) ? (data={},data[arguments[0]]=arguments[1]) : (data=arguments[0]) );
+	return Brahma.bench(this, [polymorph,data], function(elem, args) {
+		if ("object"===typeof args[1]) {
+			Brahma(elem).each(function() {
+				for (var i in data) {
+					if (polymorph.length!==0) for (var p = 0;p<polymorph.length;p++)
+					this.style[polymorph[p]+i] = data[i];
+					this.style[i] = data[i];
+				};	
+			});
 			return Brahma(elem);
 		} else {
-			return elem[0].style;
+			return elem[0].style[data];
 		};
-		return Brahma(elem);
 	});
 };
 
-Brahma.core.data = function() {
+Brahma.vector.data = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
+		var key = Brahma.camelCase(args[0]);
 		for (var i = 0;i<elem.length;i++) {
 			if (args.length>1) {
 				if (Brahma.caniuse('dataset'))
-				elem[i].dataset[args[0]] = args[1];
+				elem[i].dataset[key] = args[1];
 				else elem[i].setAttribute("data-"+args[0], args[1]);
 			} else {
 				if (Brahma.caniuse('dataset'))
-				return ("undefined"!==typeof elem[i].dataset[args[0]]) ? elem[i].dataset[args[0]] : null;
+				return ("undefined"!==typeof elem[i].dataset[key]) ? elem[i].dataset[key] : null;
 				else
 				return elem[i].getAttribute("data-"+args[0]);
 			}
@@ -257,7 +277,7 @@ Brahma.core.data = function() {
 	});
 }
 
-Brahma.core.attr = function() {
+Brahma.vector.attr = function() {
 	var elem;
 	return Brahma.bench(this, arguments, function(elem, args) {
 		
@@ -292,7 +312,7 @@ Brahma.core.attr = function() {
 	});
 };
 
-Brahma.core.scroll = function() {
+Brahma.vector.scroll = function() {
 	var doc = document.documentElement;
 	var left = (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
 	var top = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);

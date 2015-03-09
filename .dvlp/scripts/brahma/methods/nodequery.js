@@ -4,7 +4,7 @@
 Для объектов неопределнного типа идет простой перебор свойств (не включая прототипные свойства)
 Если же subject не объект, то он будет включен как элемент массива.
 */
-window.Brahma.bench = function(subject, args, tieback) {
+Brahma.bench = function(subject, args, tieback) {
 	
 	var  elements = [];
 	if ("object" === typeof subject) {
@@ -26,7 +26,7 @@ window.Brahma.bench = function(subject, args, tieback) {
 	return tieback.call(subject, elements, args);
 };
 	
-window.Brahma.nodeQuery = window.Brahma.core.nodeQuery = function(query, root) {
+Brahma.nodeQuery = Brahma.vector.nodeQuery = function(query, root) {
 	var prefix;
 	(root) ? (prefix=':scope ') : (prefix=''); 
 	var root = root||document;
@@ -46,14 +46,18 @@ window.Brahma.nodeQuery = window.Brahma.core.nodeQuery = function(query, root) {
 
 			if (queryExpr.exec(query) === null) {
 				if (query.length===0) return new Array();
-
-				try {
-					if (patch) console.log('QUERY', prefix+query);
-					return root.querySelectorAll(prefix+query);
-				} catch(e) {
-					console.log('Brahma: querySelectorAll not support query: '+query)
-				}
 				
+				if (currentQuerySelector===0) {
+					// Нативный селектор
+					try {
+						return root.querySelectorAll(prefix+query);
+					} catch(e) {
+						console.log('Brahma: querySelectorAll not support query: '+query)
+					}
+				} else if (currentQuerySelector===1) {
+					// Sizzle
+					return Sizzle(query, root);
+				}				
 			} else {
 				return [document.createElement(result[1].toUpperCase())];
 			};

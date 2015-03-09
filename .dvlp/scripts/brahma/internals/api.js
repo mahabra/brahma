@@ -1,3 +1,13 @@
+/**
+@method camelCase
+change dashed string to camel case style string
+
+*/
+Brahma.camelCase = function(text) {
+	return text.replace(/-([\da-z])/gi, function( all, letter ) {
+		return letter.toUpperCase();
+	});
+};
 /** 
 @method clone
 Создает копию объекта, возвращая её.

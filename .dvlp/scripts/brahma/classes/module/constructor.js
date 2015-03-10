@@ -2,18 +2,10 @@ function() {
 	var name, internals;
 	("string"===typeof arguments[0]) ? (name=arguments[0],internals=arguments[1]||[]) : (name=false,internals=arguments[0]||[]);
 	
-	var constructor = function() {};
-	if (!Object.create) {
-		
-		constructor.prototype = Brahma.clone(Brahma.classes.module.proto);
-	} else {
-		
-		constructor.prototype = Object.create(Brahma.classes.module.proto.prototype);
-		constructor.prototype.constructor = constructor;
-	}
-	var module = new constructor();
-	module.master = this;
-	if (name) this.modules[name] = module;
+	var module = Brahma.inherit(Brahma.classes.module.proto);
+	module.master = this.ref();
+	
+	//if (name) this.modules[name] = module;
 	/* Каждый модуль может быть снабжден расширениями */
 	if (internals instanceof Array) {
 		for (var i = 0;i<internals.length;i++) {

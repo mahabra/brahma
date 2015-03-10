@@ -1,3 +1,9 @@
+Object.prototype.ref = function() {
+	function Ref() {};
+	Ref.prototype = this;
+	Ref.prototype.constructor = Ref;
+	return new Ref;
+};
 /*
 IE не поддерживает scope: в querySelector, поэтому требуется альтернативное решение.
 Решение найдено здесь: https://github.com/lazd/scopedQuerySelectorShim
@@ -301,20 +307,70 @@ Brahma.camelCase = function(text) {
 		return letter.toUpperCase();
 	});
 };
+
+/**
+	Функция создает объект, ссылающийся на другой. Соль в том, что ссылка будет происходить через прототип, а сам конструктор объекта будет типа Ref.
+	Это позволит его отличать от обычной ссылки на объект при клонировании.
+*/
+Brahma.ref = function(proto) {
+	function Ref() {};
+	Ref.prototype = proto;
+	var test = new Ref;
+	return test;
+};
+
+/**
+@method copyProps
+Копирует все свойства объекта
+*/
+Brahma.copyProps = function(target, source) {
+	for (var prop in source) {
+		if (source.hasOwnProperty(prop)) target[prop] = source[prop];
+	}
+	return target;
+}
+
+/**
+@method inherit
+Копирует объект по максимальной глубине (функции и plane объекты остаются в прототипы, объекты клонируются)
+*/
+Brahma.inherit = function(proto) {
+	var o = Object.create(proto);
+	for (var prop in proto) {
+		if (proto.hasOwnProperty(prop)&&null!==proto[prop]&&"object"===typeof proto[prop]) {
+			/* Отслеживаем псевдо-ссылку */
+			if (proto[prop].constructor.name!=='Ref') {
+				o[prop] = Brahma.clone(proto[prop]);
+			}
+			else {
+				o[prop] = proto[prop];
+			}
+		}
+	}
+	return o;
+}
+
 /** 
 @method clone
 Создает копию объекта, возвращая её.
 */
 Brahma.clone = function(prototype) {
-	var clone = {};
+	if (prototype instanceof Array) {
+		var clone = [];
+		clone.length=prototype.length;
+	} else {
+		var clone = {};
+	};
+	
 	for (var prop in prototype) {
 		if (!prototype.hasOwnProperty(prop)) continue;
-		if (prototype[prop]==null || "object"!=typeof prototype[prop]) {
+		if (prototype[prop]===null || "object"!==typeof prototype[prop] || prototype[prop].constructor.name==='Ref') {
 			clone[prop] = prototype[prop];
 		} else {
 			clone[prop] = Brahma.clone(prototype[prop]);
 		}
-	}
+	};
+
 	return clone;
 }
 /**
@@ -328,13 +384,14 @@ Brahma.extend = function() {
 
 	
 	for (var i in proto) {
+		if (!proto.hasOwnProperty(i)) break;
 		switch ( typeof proto[i] ) {
 			case 'undefined':
 			case 'null':
 				target[i] = null;
 			break;
 			case 'object': 
-				if (!proto.hasOwnProperty(i)) break;
+				
 				if (proto[i] instanceof Array) {
 					target[i] = [];
 					
@@ -395,18 +452,10 @@ Brahma.die= function(a) {
 	var name, internals;
 	("string"===typeof arguments[0]) ? (name=arguments[0],internals=arguments[1]||[]) : (name=false,internals=arguments[0]||[]);
 	
-	var constructor = function() {};
-	if (!Object.create) {
-		
-		constructor.prototype = Brahma.clone(Brahma.classes.module.proto);
-	} else {
-		
-		constructor.prototype = Object.create(Brahma.classes.module.proto.prototype);
-		constructor.prototype.constructor = constructor;
-	}
-	var module = new constructor();
-	module.master = this;
-	if (name) this.modules[name] = module;
+	var module = Brahma.inherit(Brahma.classes.module.proto);
+	module.master = this.ref();
+	
+	//if (name) this.modules[name] = module;
 	/* Каждый модуль может быть снабжден расширениями */
 	if (internals instanceof Array) {
 		for (var i = 0;i<internals.length;i++) {
@@ -452,11 +501,13 @@ Brahma.die= function(a) {
 			Т.е. фабрику, вместе со всеми настройками расширений можно задать заранее, но создать объект по этой схеме можно будет позже.
 			*/
 			addFabric : function(name, internals, constructor, proto) {
+				
 				this.fabrics[name] = {
 					constructor: constructor||function(){},
 					internals: internals,
 					proto: proto||{}
 				};
+
 				return this;
 			},
 			/**
@@ -465,14 +516,11 @@ Brahma.die= function(a) {
 			*/
 			create: function(fabricName, extend) {
 				
-				var constructor = function(){};
-				
-				constructor.prototype = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
-				constructor.prototype.constructor = constructor;
-				var module = new constructor();
-				Brahma.extend(module, extend);
+				var module = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
 
-				module.master = this;
+				Brahma.copyProps(module, extend);
+				module.master = this.ref();
+				
 				this.fabrics[fabricName].constructor.call(module);
 				return module;
 			},
@@ -641,7 +689,8 @@ Brahma.die= function(a) {
 				var newObject = Brahma.classes[className].constructor.call(false, internals||[]);
 				if ("object"===typeof extend) for (var i in extend){
 					if (extend.hasOwnProperty(i)) {
-						newObject[i] = extend[i];
+						if ("object"===typeof extend[i]) newObject[i] = Brahma.inherit(extend[i]);
+						else newObject[i] = extend[i];
 					}
 				}
 				return newObject;
@@ -735,17 +784,13 @@ Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application 
 		// > Test for plugin exists
 		if (typeof Brahma.applications.modules[arguments[0]] != 'object') {
 			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
-		}
+		};
 
 		// > We can give options to life elemnt
 		var options = arguments.length>1 && typeof arguments[1] == 'object' ? arguments[1] : {}; 
-
-		var constructor = function() {
-		};
 		
-		constructor.prototype = Brahma.applications.modules[arguments[0]];
-		constructor.prototype.constructor = constructor;
-		var plug = new constructor();
+		var plug = Brahma.inherit(Brahma.applications.modules[arguments[0]]);
+
 		plug.config = Brahma.extend(plug.config, options, true);
 
 		plug.scope = plug.selector = this;
@@ -817,16 +862,33 @@ Brahma.vector.replace = function(newElement, preserveData) {
 				if (preserveData) {
 					var className = e.className;
 					var data = {};
-					for (var d in e.dataset) {
-						if (e.dataset.hasOwnProperty(d)) data[d] = e.dataset[d];
-					};
+					if (Brahma.caniuse('dataset')) {
+						for (var d in e.dataset) {
+							if (e.dataset.hasOwnProperty(d)) data[d] = e.dataset[d];
+						};
+					} else {
+						for (var d in e.attributes) {
+							if (!e.attributes.hasOwnProperty(d)) continue;
+							if (e.attributes[d].name.substring(0,5)==='data-') {
+								
+								data[e.attributes[d].name.substring(5)] = e.attributes[d].value;
+							}
+						};
+					}
+					
 				};
 				queue.push(newElement.cloneNode());
 				e.parentNode.replaceChild(queue[queue.length-1], e);
 				
 				if (preserveData) {
-					for (var d in data) {
-						queue[queue.length-1].dataset[d] = data[d];
+					if (Brahma.caniuse('dataset')) {
+						for (var d in data) {
+							queue[queue.length-1].dataset[d] = data[d];
+						};
+					} else {
+						for (var d in data) {
+							queue[queue.length-1].setAttribute('data-'+d, data[d]);
+						};
 					};
 					queue[queue.length-1].className = className;
 				};

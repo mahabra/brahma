@@ -43,16 +43,33 @@ Brahma.vector.replace = function(newElement, preserveData) {
 				if (preserveData) {
 					var className = e.className;
 					var data = {};
-					for (var d in e.dataset) {
-						if (e.dataset.hasOwnProperty(d)) data[d] = e.dataset[d];
-					};
+					if (Brahma.caniuse('dataset')) {
+						for (var d in e.dataset) {
+							if (e.dataset.hasOwnProperty(d)) data[d] = e.dataset[d];
+						};
+					} else {
+						for (var d in e.attributes) {
+							if (!e.attributes.hasOwnProperty(d)) continue;
+							if (e.attributes[d].name.substring(0,5)==='data-') {
+								
+								data[e.attributes[d].name.substring(5)] = e.attributes[d].value;
+							}
+						};
+					}
+					
 				};
 				queue.push(newElement.cloneNode());
 				e.parentNode.replaceChild(queue[queue.length-1], e);
 				
 				if (preserveData) {
-					for (var d in data) {
-						queue[queue.length-1].dataset[d] = data[d];
+					if (Brahma.caniuse('dataset')) {
+						for (var d in data) {
+							queue[queue.length-1].dataset[d] = data[d];
+						};
+					} else {
+						for (var d in data) {
+							queue[queue.length-1].setAttribute('data-'+d, data[d]);
+						};
 					};
 					queue[queue.length-1].className = className;
 				};

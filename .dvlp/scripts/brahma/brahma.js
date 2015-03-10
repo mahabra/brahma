@@ -1,3 +1,4 @@
+<%=$.snippet('hacks/refPrototype.js')%>
 <%=$.snippet('hacks/queryselector.js')%>
 ;(function() {
 	var BrahmaFactory; // Инициализируем факторию для использования внутри её же конструктора
@@ -105,7 +106,8 @@
 				var newObject = Brahma.classes[className].constructor.call(false, internals||[]);
 				if ("object"===typeof extend) for (var i in extend){
 					if (extend.hasOwnProperty(i)) {
-						newObject[i] = extend[i];
+						if ("object"===typeof extend[i]) newObject[i] = Brahma.inherit(extend[i]);
+						else newObject[i] = extend[i];
 					}
 				}
 				return newObject;

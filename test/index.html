@@ -120,14 +120,23 @@
 
 	QUnit.test("test apps", function( assert ) {
 		var app1 = Brahma.app('test1', {
-			a: 123
+			a: 123,
+			privateProperty: true,
+			grid: ['a']
 		});
 		var app2 = Brahma.app('test2', {
 			a: 456
 		});
+		
+
 		assert.equal(app2.a+app1.a, 579, "prototypes different");
 
-		var app3 = Brahma.app('test3',{});
+		var testNewApp = Brahma(window).app('test1');
+		var testNewApp2 = Brahma(window).app('test1');
+		testNewApp.grid.push('b');
+		assert.equal(testNewApp2.grid.length, 1, "subobjects cloned correctly");
+
+		var app3 = Brahma.app('test3',{});		
 		Brahma.app('test3').module('hello',{abc:'dfg'});
 		assert.equal(Brahma.app('test3').module('hello').abc, 'dfg', "submodules works");
 	});

@@ -18,11 +18,13 @@
 			Т.е. фабрику, вместе со всеми настройками расширений можно задать заранее, но создать объект по этой схеме можно будет позже.
 			*/
 			addFabric : function(name, internals, constructor, proto) {
+				
 				this.fabrics[name] = {
 					constructor: constructor||function(){},
 					internals: internals,
 					proto: proto||{}
 				};
+
 				return this;
 			},
 			/**
@@ -31,14 +33,11 @@
 			*/
 			create: function(fabricName, extend) {
 				
-				var constructor = function(){};
-				
-				constructor.prototype = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
-				constructor.prototype.constructor = constructor;
-				var module = new constructor();
-				Brahma.extend(module, extend);
+				var module = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
 
-				module.master = this;
+				Brahma.copyProps(module, extend);
+				module.master = this.ref();
+				
 				this.fabrics[fabricName].constructor.call(module);
 				return module;
 			},

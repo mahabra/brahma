@@ -46,17 +46,13 @@ Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application 
 		// > Test for plugin exists
 		if (typeof Brahma.applications.modules[arguments[0]] != 'object') {
 			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
-		}
+		};
 
 		// > We can give options to life elemnt
 		var options = arguments.length>1 && typeof arguments[1] == 'object' ? arguments[1] : {}; 
-
-		var constructor = function() {
-		};
 		
-		constructor.prototype = Brahma.applications.modules[arguments[0]];
-		constructor.prototype.constructor = constructor;
-		var plug = new constructor();
+		var plug = Brahma.inherit(Brahma.applications.modules[arguments[0]]);
+
 		plug.config = Brahma.extend(plug.config, options, true);
 
 		plug.scope = plug.selector = this;

@@ -19,7 +19,7 @@ module.exports = function(grunt) {
           mangle: false
         },
         files: {
-          '../brahma.min.js': ['../dist/brahma.js']
+          '../dist/brahma.min.js': ['../dist/brahma.js']
         }
       }
     },
@@ -33,14 +33,7 @@ module.exports = function(grunt) {
     watch: {
       brahma: {
         files: ['./scripts/**/*.js'], // which files to watch
-        tasks: ['less','snipper'],
-        options: {
-          nospawn: true
-        }
-      },
-      brahmamin: {
-        files: ['../dist/brahma.js'], // which files to watch
-        tasks: ['uglify'],
+        tasks: ['snipper','uglify'],
         options: {
           nospawn: true
         }

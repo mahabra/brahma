@@ -180,7 +180,7 @@ IE не поддерживает scope: в querySelector, поэтому тре�
 		/*
 			Указываем версию
 		*/
-		Brahma.vector.version = '2.0';
+		Brahma.vector.version = '1.3.7';
 		/*
 			Над необходимо иметь данное свойство, что бы уметь отличать объекты Brahma от прочих
 		*/
@@ -687,6 +687,7 @@ Brahma.die= function(a) {
 		Brahma.industry = {
 			make: function(className, internals, extend) {
 				var newObject = Brahma.classes[className].constructor.call(false, internals||[]);
+
 				if ("object"===typeof extend) for (var i in extend){
 					if (extend.hasOwnProperty(i)) {
 						if ("object"===typeof extend[i]) newObject[i] = Brahma.inherit(extend[i]);

@@ -5,7 +5,7 @@
     "Morulus <vladimirmorulus@gmail.com>"
   ],
   "description": "Library for creating widgets and front-end apps",
-  "main": "brahma.min.js",
+  "main": "dist/brahma.min.js",
   "moduleType": [
   ],
   "keywords": [

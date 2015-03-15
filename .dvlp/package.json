@@ -6,6 +6,6 @@
 	  "grunt-contrib-less": "~0.11.0",
 	  "grunt-contrib-watch": "~0.6.1",
 	  "grunt-contrib-uglify": "latest",
-	  "grunt-contrib-snipper": "latest"
+	  "grunt-snipper": "latest"
 	}
 }

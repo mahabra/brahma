@@ -126,10 +126,45 @@ Brahma.extend = function() {
 	
 	return target;
 };
+
+/* 
+Возвращает величину в пикселях, получая число % или px 
+@param value число
+@param quantity контекстная величина в пикселях
+*/
+Brahma.percentEq = function(value, quantity) {
+	
+	if ("string" == typeof value&&value.substr(-1)==='%') {
+		return ((quantity/100)* (value.substring(0, value.length-1)));
+	};
+	
+	return parseInt(value);
+};
+/*
+Парсит строку деклараций в ситаксисе разметки CSS
+Brahma.parseCssDeclarations("background-color:red"); // {"background-color": "red"}
+*/
+Brahma.parseCssDeclarations = function(cssDeclarations) {
+	if (typeof cssDeclarations != "string") return {};
+	var cssDeclarations = cssDeclarations.split("\n").join('').split("\t").join('');
+	if (cssDeclarations.length<1) return {};
+	var cssDeclarations = cssDeclarations.split(';')
+	var options = {};
+	for (var o in cssDeclarations) {
+		if (!cssDeclarations.hasOwnProperty(o)) continue;
+		
+		var op = (function(s){return "string"===typeof s ? s.trim() : s;})(cssDeclarations[o]).split(':');
+		
+		if (op[0].length===0) continue;
+		options[op[0]] = (op[1]==='true'||op[1]==='false') ? (op[1]==="true"?true:false) : op[1];
+	};
+
+	return options;
+};
+
 /*
 Перехват ошибки
 */
-
 Brahma.die= function(a) {
 	throw "Dharma error: "+(a||'unknown error');
 };

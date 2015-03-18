@@ -106,12 +106,13 @@
 		proto: {
 			eventListners : {},
 			bind : function(e, callback, once) {
-				var once = once;
 				if (typeof this.eventListners[e] != 'object') this.eventListners[e] = [];
+				
 				this.eventListners[e].push({
 					callback: callback,
 					once: once
 				});
+
 				return this;
 			},
 			once : function(e, callback) {
@@ -136,9 +137,11 @@
 				if (typeof this.eventListners[e] == 'object' && this.eventListners[e].length>0) {
 					var todelete = [];
 					for (var i = 0; i<this.eventListners[e].length; i++) {
-						if (typeof this.eventListners[e][i] == 'object') {
-							if (typeof this.eventListners[e][i].callback == "function") response = this.eventListners[e][i].callback.apply(this, args);
+						if (typeof this.eventListners[e][i] === 'object') {
+							if (typeof this.eventListners[e][i].callback === "function") response = this.eventListners[e][i].callback.apply(this, args);
+							
 							if (this.eventListners[e][i].once) {
+
 								todelete.push(i);
 							};
 						};

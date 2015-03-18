@@ -1,4 +1,35 @@
 Brahma.applications.addFabric('default',['events','fabrics'], function() {});
+
+Brahma.applications.execute = function() {
+		// > Test for plugin exists
+		if (typeof Brahma.applications.modules[arguments[0]] != 'object') {
+			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
+		};
+
+		// > We can give options to life elemnt
+		var options = arguments.length>1 && typeof arguments[1] == 'object' ? arguments[1] : {}; 
+		
+		var plug = Brahma.inherit(Brahma.applications.modules[arguments[0]]);
+
+		plug.config = Brahma.extend(plug.config, options, true);
+
+		plug.scope = plug.selector = this;
+		
+		plug.classname = arguments[0];
+		
+		// > ! Append life variable to element
+		Brahma(this)[0].component = plug;		
+		
+		// > inside tie function
+		if (typeof arguments[2] == "function") {
+			arguments[2].apply(plug);
+		};
+
+		if ("function"===typeof plug.run) var result = plug.run();
+		if (typeof result === 'undefined') return plug;
+		else return result;
+};
+
 Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application = function(applicationName) {
 	if (this === window || typeof this == 'function') {
 		// > name of component
@@ -42,37 +73,21 @@ Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application 
 		if (!name) return this;
 		else return Brahma.applications.modules[name];
 	} else {
-
-		// > Test for plugin exists
-		if (typeof Brahma.applications.modules[arguments[0]] != 'object') {
-			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
-		};
-
-		// > We can give options to life elemnt
-		var options = arguments.length>1 && typeof arguments[1] == 'object' ? arguments[1] : {}; 
-		
-		var plug = Brahma.inherit(Brahma.applications.modules[arguments[0]]);
-
-		plug.config = Brahma.extend(plug.config, options, true);
-
-		plug.scope = plug.selector = this;
-		
-		plug.classname = arguments[0];
-		
-		// > ! Append life variable to element
-		Brahma(this)[0].component = plug;		
-		
-		// > inside tie function
-		if (typeof arguments[2] == "function") {
-			arguments[2].apply(plug);
-		};
-
-		if ("function"===typeof plug.run) var result = plug.run();
-		if (typeof result === 'undefined') return plug;
-		else return result;
+		return Brahma.applications.execute.apply(this,arguments);
 	}
 }
 /* Выполняет приложение без передачи каких либо данных в качестве scope. Аналогично конструкции Brahma(window).app(appName) */
 Brahma.application.run = function(appName) {
 	return Brahma(window).app(appName);
+}
+
+/* В отличии от app, метод widget вызывает конструктор приложения для каждого элемента в наборе селекторов и возвращает не ссылку на созданный экземпляр приложения, а ссылку на vector */
+Brahma.vector.widget = function() {
+	var args = arguments;
+	return Brahma.bench(this, arguments, function(elem, args) {
+		for (var i=0;i<elem.length;i++) {
+			Brahma.applications.execute.apply(elem[i],args);
+		};
+		return this;
+	});
 }

@@ -196,7 +196,18 @@ Brahma.vector.tie = function(cb) {
 	return this;
 }
 
-Brahma.addEvent = function(elem, type, eventHandle) {
+Brahma.addEvent = function(elem, type, userEventHandle, once) {
+	var eventHandle;
+	eventHandle = once ? function() { 
+		userEventHandle.apply(this, arguments); 
+		if ( elem.addEventListener ) {
+			elem.removeEventListener(type, eventHandle, false);
+		}  else if ( elem.attachEvent ) {
+			 element.detachEvent("on" + type, eventHandle);
+		} else {
+			elem["on"+type] = null;
+		};
+	} : userEventHandle;
     if (elem == null || typeof(elem) == 'undefined') return;
     if ( elem.addEventListener ) {
 
@@ -211,7 +222,7 @@ Brahma.addEvent = function(elem, type, eventHandle) {
 Brahma.vector.bind = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		for (var i=0;i<elem.length;i++) {
-		   	Brahma.addEvent(elem[0], args[0], args[1]);
+		   	Brahma.addEvent(elem[0], args[0], args[1], args[2]||false);
 		}
 		return this;
 	});

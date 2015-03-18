@@ -425,10 +425,45 @@ Brahma.extend = function() {
 	
 	return target;
 };
+
+/* 
+Возвращает величину в пикселях, получая число % или px 
+@param value число
+@param quantity контекстная величина в пикселях
+*/
+Brahma.percentEq = function(value, quantity) {
+	
+	if ("string" == typeof value&&value.substr(-1)==='%') {
+		return ((quantity/100)* (value.substring(0, value.length-1)));
+	};
+	
+	return parseInt(value);
+};
+/*
+Парсит строку деклараций в ситаксисе разметки CSS
+Brahma.parseCssDeclarations("background-color:red"); // {"background-color": "red"}
+*/
+Brahma.parseCssDeclarations = function(cssDeclarations) {
+	if (typeof cssDeclarations != "string") return {};
+	var cssDeclarations = cssDeclarations.split("\n").join('').split("\t").join('');
+	if (cssDeclarations.length<1) return {};
+	var cssDeclarations = cssDeclarations.split(';')
+	var options = {};
+	for (var o in cssDeclarations) {
+		if (!cssDeclarations.hasOwnProperty(o)) continue;
+		
+		var op = (function(s){return "string"===typeof s ? s.trim() : s;})(cssDeclarations[o]).split(':');
+		
+		if (op[0].length===0) continue;
+		options[op[0]] = (op[1]==='true'||op[1]==='false') ? (op[1]==="true"?true:false) : op[1];
+	};
+
+	return options;
+};
+
 /*
 Перехват ошибки
 */
-
 Brahma.die= function(a) {
 	throw "Dharma error: "+(a||'unknown error');
 };
@@ -589,12 +624,13 @@ Brahma.die= function(a) {
 		proto: {
 			eventListners : {},
 			bind : function(e, callback, once) {
-				var once = once;
 				if (typeof this.eventListners[e] != 'object') this.eventListners[e] = [];
+				
 				this.eventListners[e].push({
 					callback: callback,
 					once: once
 				});
+
 				return this;
 			},
 			once : function(e, callback) {
@@ -619,9 +655,11 @@ Brahma.die= function(a) {
 				if (typeof this.eventListners[e] == 'object' && this.eventListners[e].length>0) {
 					var todelete = [];
 					for (var i = 0; i<this.eventListners[e].length; i++) {
-						if (typeof this.eventListners[e][i] == 'object') {
-							if (typeof this.eventListners[e][i].callback == "function") response = this.eventListners[e][i].callback.apply(this, args);
+						if (typeof this.eventListners[e][i] === 'object') {
+							if (typeof this.eventListners[e][i].callback === "function") response = this.eventListners[e][i].callback.apply(this, args);
+							
 							if (this.eventListners[e][i].once) {
+
 								todelete.push(i);
 							};
 						};
@@ -738,6 +776,37 @@ Brahma.die= function(a) {
 			```
 		*/
 		Brahma.applications.addFabric('default',['events','fabrics'], function() {});
+
+Brahma.applications.execute = function() {
+		// > Test for plugin exists
+		if (typeof Brahma.applications.modules[arguments[0]] != 'object') {
+			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
+		};
+
+		// > We can give options to life elemnt
+		var options = arguments.length>1 && typeof arguments[1] == 'object' ? arguments[1] : {}; 
+		
+		var plug = Brahma.inherit(Brahma.applications.modules[arguments[0]]);
+
+		plug.config = Brahma.extend(plug.config, options, true);
+
+		plug.scope = plug.selector = this;
+		
+		plug.classname = arguments[0];
+		
+		// > ! Append life variable to element
+		Brahma(this)[0].component = plug;		
+		
+		// > inside tie function
+		if (typeof arguments[2] == "function") {
+			arguments[2].apply(plug);
+		};
+
+		if ("function"===typeof plug.run) var result = plug.run();
+		if (typeof result === 'undefined') return plug;
+		else return result;
+};
+
 Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application = function(applicationName) {
 	if (this === window || typeof this == 'function') {
 		// > name of component
@@ -781,39 +850,23 @@ Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application 
 		if (!name) return this;
 		else return Brahma.applications.modules[name];
 	} else {
-
-		// > Test for plugin exists
-		if (typeof Brahma.applications.modules[arguments[0]] != 'object') {
-			throw('Brahma: require `'+arguments[0]+'` application. Please, download it.');
-		};
-
-		// > We can give options to life elemnt
-		var options = arguments.length>1 && typeof arguments[1] == 'object' ? arguments[1] : {}; 
-		
-		var plug = Brahma.inherit(Brahma.applications.modules[arguments[0]]);
-
-		plug.config = Brahma.extend(plug.config, options, true);
-
-		plug.scope = plug.selector = this;
-		
-		plug.classname = arguments[0];
-		
-		// > ! Append life variable to element
-		Brahma(this)[0].component = plug;		
-		
-		// > inside tie function
-		if (typeof arguments[2] == "function") {
-			arguments[2].apply(plug);
-		};
-
-		if ("function"===typeof plug.run) var result = plug.run();
-		if (typeof result === 'undefined') return plug;
-		else return result;
+		return Brahma.applications.execute.apply(this,arguments);
 	}
 }
 /* Выполняет приложение без передачи каких либо данных в качестве scope. Аналогично конструкции Brahma(window).app(appName) */
 Brahma.application.run = function(appName) {
 	return Brahma(window).app(appName);
+}
+
+/* В отличии от app, метод widget вызывает конструктор приложения для каждого элемента в наборе селекторов и возвращает не ссылку на созданный экземпляр приложения, а ссылку на vector */
+Brahma.vector.widget = function() {
+	var args = arguments;
+	return Brahma.bench(this, arguments, function(elem, args) {
+		for (var i=0;i<elem.length;i++) {
+			Brahma.applications.execute.apply(elem[i],args);
+		};
+		return this;
+	});
 }
 		/*
 			API в стиле jQuery, работа с элементами, создание элементов и пр.
@@ -1016,7 +1069,18 @@ Brahma.vector.tie = function(cb) {
 	return this;
 }
 
-Brahma.addEvent = function(elem, type, eventHandle) {
+Brahma.addEvent = function(elem, type, userEventHandle, once) {
+	var eventHandle;
+	eventHandle = once ? function() { 
+		userEventHandle.apply(this, arguments); 
+		if ( elem.addEventListener ) {
+			elem.removeEventListener(type, eventHandle, false);
+		}  else if ( elem.attachEvent ) {
+			 element.detachEvent("on" + type, eventHandle);
+		} else {
+			elem["on"+type] = null;
+		};
+	} : userEventHandle;
     if (elem == null || typeof(elem) == 'undefined') return;
     if ( elem.addEventListener ) {
 
@@ -1031,7 +1095,7 @@ Brahma.addEvent = function(elem, type, eventHandle) {
 Brahma.vector.bind = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		for (var i=0;i<elem.length;i++) {
-		   	Brahma.addEvent(elem[0], args[0], args[1]);
+		   	Brahma.addEvent(elem[0], args[0], args[1], args[2]||false);
 		}
 		return this;
 	});

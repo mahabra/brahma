@@ -30,6 +30,23 @@ module.exports = function(grunt) {
         }
       }
     },
+    increase: {
+      tick: { // 
+          degree: 3,
+          json:  '../bower.json',
+          report: {'../UPDATES.md':'## Versions'}
+      },
+      model: {
+          degree: 2,
+          json:  '../bower.json',
+          report: {'../UPDATES.md':'## Versions'}
+      },
+      version: {
+          degree: 1,
+          json:  '../bower.json',
+          report: {'../UPDATES.md':'## Versions'}
+      }
+    },
     watch: {
       brahma: {
         files: ['./scripts/**/*.js'], // which files to watch
@@ -42,10 +59,14 @@ module.exports = function(grunt) {
   });
 
   grunt.loadNpmTasks('grunt-snipper');
+  grunt.loadNpmTasks('grunt-increase');
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-uglify');
 
 
   grunt.registerTask('default', ['snipper', 'uglify', 'watch']);
+  grunt.registerTask('up-tick', ['increase:tick']);
+  grunt.registerTask('up-model', ['increase:model']);
+  grunt.registerTask('up-version', ['increase:version']);
 };

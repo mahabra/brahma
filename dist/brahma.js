@@ -961,20 +961,27 @@ Brahma.vector.parent = function() {
 	});
 };
 
-Brahma.vector.createNode = function(nodeName, attrs) {
-	var attrs = attrs||{};
-	try {
-		var newElement = document.createElement(nodeName);
-	} catch(e) {
-		Brahma.die('Not a valid name tag name `'+nodeName+'`('+nodeName.length+')');
-	}
-	this[0].appendChild(newElement);
-	for (var name in attrs) {
-		if (attrs.hasOwnProperty(name)) {
-			newElement.setAttribute(name, attrs[name]);
+Brahma.vector.createNode = function() {
+	return Brahma.bench(this, arguments, function(elem,args) {
+		var nodeName=args[0], attrs=args[1]||{}, prepend=args[2]||false,element=elem[0];
+		try {
+			var newElement = document.createElement(nodeName);
+		} catch(e) {
+			Brahma.die('Not a valid name tag name `'+nodeName+'`('+nodeName.length+')');
 		}
-	}
-	return Brahma([newElement]);
+		;(!(prepend||false))?this[0].appendChild(newElement):(function() {
+			;
+			if (element.firstChild!==null)
+			element.insertBefore(newElement, element.firstChild);
+			else element.appendChild(newElement);
+		})();
+		for (var name in attrs) {
+			if (attrs.hasOwnProperty(name)) {
+				newElement.setAttribute(name, attrs[name]);
+			}
+		}
+		return Brahma([newElement]);
+	});
 }
 
 Brahma.vector.each = Brahma.each = function() {
@@ -993,7 +1000,6 @@ Brahma.vector.each = Brahma.each = function() {
 
 Brahma.vector.put = function() {
 	var kit = [];
-
 	Brahma.bench(this, arguments, function(elem, args) {
 		Brahma(elem).each(function(element) {
 			switch(typeof args[0]) {
@@ -1006,6 +1012,30 @@ Brahma.vector.put = function() {
 					var nodeName = args[0].trim().toUpperCase();
 					var attrs = args[1]||{};
 					var newElement = Brahma(element).createNode(nodeName, attrs)[0];
+					kit.push(newElement);
+				break;
+			};
+		});
+	});
+	return Brahma(kit);
+};
+
+Brahma.vector.shift = function() {
+	var kit = [];
+	Brahma.bench(this, arguments, function(elem, args) {
+		Brahma(elem).each(function(element) {
+			switch(typeof args[0]) {
+				case "object":
+					var newElement = args[0];
+					if (element.firstChild!==null)
+					element.insertBefore(newElement, element.firstChild);
+					else element.appendChild(newElement);
+					kit.push(newElement);
+				break;
+				case "string":
+					var nodeName = args[0].trim().toUpperCase();
+					var attrs = args[1]||{};
+					var newElement = Brahma(element).createNode(nodeName, attrs, true)[0];
 					kit.push(newElement);
 				break;
 			};

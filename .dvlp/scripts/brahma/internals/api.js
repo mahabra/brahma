@@ -29,13 +29,14 @@ Brahma.copyProps = function(target, source) {
 		if (source.hasOwnProperty(prop)) target[prop] = source[prop];
 	}
 	return target;
-}
+};
 
 /**
 @method inherit
 Копирует объект по максимальной глубине (функции и plane объекты остаются в прототипы, объекты клонируются)
+Поверх размещает extend, который, как правило, должен содержат только свойства
 */
-Brahma.inherit = function(proto) {
+Brahma.inherit = function(proto, extend) {
 	var o = Object.create(proto);
 	for (var prop in proto) {
 		if (proto.hasOwnProperty(prop)&&null!==proto[prop]&&"object"===typeof proto[prop]) {
@@ -48,6 +49,7 @@ Brahma.inherit = function(proto) {
 			}
 		}
 	}
+	if (extend) o = Brahma.copyProps(o, extend);
 	return o;
 }
 
@@ -73,7 +75,7 @@ Brahma.clone = function(prototype) {
 	};
 
 	return clone;
-}
+};
 /**
 @method extend
 Объеденяет два объекта

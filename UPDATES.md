@@ -2,6 +2,9 @@ Updates
 --
 
 ## Versions
+### Version 1.3.12
+- Adds use and unbind function, updated inherit
+
 ### Version 1.3.11
 - Adds shift method to DOM Api
 

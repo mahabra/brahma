@@ -73,7 +73,7 @@ Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application 
 		if (!name) return this;
 		else return Brahma.applications.modules[name];
 	} else {
-		return Brahma.applications.execute.apply(this,arguments);
+		return Brahma.applications.execute.apply(Brahma(this).first(),arguments);
 	}
 }
 /* Выполняет приложение без передачи каких либо данных в качестве scope. Аналогично конструкции Brahma(window).app(appName) */
@@ -81,9 +81,8 @@ Brahma.application.run = function(appName) {
 	return Brahma(window).app(appName);
 }
 
-/* В отличии от app, метод widget вызывает конструктор приложения для каждого элемента в наборе селекторов и возвращает не ссылку на созданный экземпляр приложения, а ссылку на vector */
-Brahma.vector.widget = function() {
-	var args = arguments;
+/* В отличии от app, метод run вызывает конструктор приложения для каждого элемента в наборе селекторов и возвращает не ссылку на созданный экземпляр приложения, а ссылку на vector */
+Brahma.vector.use = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		for (var i=0;i<elem.length;i++) {
 			Brahma.applications.execute.apply(elem[i],args);

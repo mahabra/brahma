@@ -328,13 +328,14 @@ Brahma.copyProps = function(target, source) {
 		if (source.hasOwnProperty(prop)) target[prop] = source[prop];
 	}
 	return target;
-}
+};
 
 /**
 @method inherit
 Копирует объект по максимальной глубине (функции и plane объекты остаются в прототипы, объекты клонируются)
+Поверх размещает extend, который, как правило, должен содержат только свойства
 */
-Brahma.inherit = function(proto) {
+Brahma.inherit = function(proto, extend) {
 	var o = Object.create(proto);
 	for (var prop in proto) {
 		if (proto.hasOwnProperty(prop)&&null!==proto[prop]&&"object"===typeof proto[prop]) {
@@ -347,6 +348,7 @@ Brahma.inherit = function(proto) {
 			}
 		}
 	}
+	if (extend) o = Brahma.copyProps(o, extend);
 	return o;
 }
 
@@ -372,7 +374,7 @@ Brahma.clone = function(prototype) {
 	};
 
 	return clone;
-}
+};
 /**
 @method extend
 Объеденяет два объекта
@@ -850,7 +852,7 @@ Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application 
 		if (!name) return this;
 		else return Brahma.applications.modules[name];
 	} else {
-		return Brahma.applications.execute.apply(this,arguments);
+		return Brahma.applications.execute.apply(Brahma(this).first(),arguments);
 	}
 }
 /* Выполняет приложение без передачи каких либо данных в качестве scope. Аналогично конструкции Brahma(window).app(appName) */
@@ -858,9 +860,8 @@ Brahma.application.run = function(appName) {
 	return Brahma(window).app(appName);
 }
 
-/* В отличии от app, метод widget вызывает конструктор приложения для каждого элемента в наборе селекторов и возвращает не ссылку на созданный экземпляр приложения, а ссылку на vector */
-Brahma.vector.widget = function() {
-	var args = arguments;
+/* В отличии от app, метод run вызывает конструктор приложения для каждого элемента в наборе селекторов и возвращает не ссылку на созданный экземпляр приложения, а ссылку на vector */
+Brahma.vector.use = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		for (var i=0;i<elem.length;i++) {
 			Brahma.applications.execute.apply(elem[i],args);
@@ -901,6 +902,12 @@ Brahma.vector.remove = function() {
 			elem[q].parentNode.removeChild(elem[q]);
 		}
 		return elem[q].parentNode;
+	});
+};
+
+Brahma.vector.first = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		return Brahma(elem[0]);
 	});
 };
 
@@ -1099,33 +1106,52 @@ Brahma.vector.tie = function(cb) {
 	return this;
 }
 
-Brahma.addEvent = function(elem, type, userEventHandle, once) {
-	var eventHandle;
-	eventHandle = once ? function() { 
-		userEventHandle.apply(this, arguments); 
+Brahma.addEvent = function(elem, type, userEventHandler, once) {
+	var eventHandler;
+	eventHandler = once ? function() { 
+		userEventHandler.apply(this, arguments); 
 		if ( elem.addEventListener ) {
-			elem.removeEventListener(type, eventHandle, false);
+			elem.removeEventListener(type, eventHandler, false);
 		}  else if ( elem.attachEvent ) {
-			 element.detachEvent("on" + type, eventHandle);
+			 element.detachEvent("on" + type, eventHandler);
 		} else {
 			elem["on"+type] = null;
 		};
-	} : userEventHandle;
+	} : userEventHandler;
     if (elem == null || typeof(elem) == 'undefined') return;
     if ( elem.addEventListener ) {
 
-        elem.addEventListener( type, eventHandle, false );
+        elem.addEventListener( type, eventHandler, false );
     } else if ( elem.attachEvent ) {
-        elem.attachEvent( "on" + type, eventHandle );
+        elem.attachEvent( "on" + type, eventHandler );
     } else {
-        elem["on"+type]=eventHandle;
+        elem["on"+type]=eventHandler;
     }
+};
+
+Brahma.removeEvent = function(elem, type, userEventHandler) {
+	if ( elem.addEventListener ) {
+		elem.removeEventListener(type, userEventHandler||false, false);
+	}  else if ( elem.attachEvent ) {
+		 element.detachEvent("on" + type, userEventHandler);
+	} else {
+		elem["on"+type] = null;
+	};
 };
 
 Brahma.vector.bind = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		for (var i=0;i<elem.length;i++) {
-		   	Brahma.addEvent(elem[0], args[0], args[1], args[2]||false);
+		   	Brahma.addEvent(elem[i], args[0], args[1], args[2]||false);
+		}
+		return this;
+	});
+};
+
+Brahma.vector.unbind = function() {
+	return Brahma.bench(this, arguments, function(elem, args) {
+		for (var i=0;i<elem.length;i++) {
+		   	Brahma.removeEvent(elem[i], args[0], args[1]||false);
 		}
 		return this;
 	});
@@ -1194,9 +1220,15 @@ Brahma.vector.data = function() {
 		var key = Brahma.camelCase(args[0]);
 		for (var i = 0;i<elem.length;i++) {
 			if (args.length>1) {
-				if (Brahma.caniuse('dataset'))
-				elem[i].dataset[key] = args[1];
-				else elem[i].setAttribute("data-"+args[0], args[1]);
+				if (args[1]===null) {
+					if (Brahma.caniuse('dataset'))
+					delete elem[i].dataset[key];
+					else elem[i].removeAttribute("data-"+args[0]);
+				} else {
+					if (Brahma.caniuse('dataset'))
+					elem[i].dataset[key] = args[1];
+					else elem[i].setAttribute("data-"+args[0], args[1]);
+				};
 			} else {
 				if (Brahma.caniuse('dataset'))
 				return ("undefined"!==typeof elem[i].dataset[key]) ? elem[i].dataset[key] : null;

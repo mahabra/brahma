@@ -65,6 +65,7 @@
 			Базовый API
 		*/
 		<%=$.snippet('internals/api.js')%>
+		
 
 		/**
 			## Классы
@@ -154,7 +155,11 @@
 			});
 			```
 		*/
-		<%=$.snippet('methods/application.js')%>
+		<%=$.snippet('methods/application.js')%> 
+		/*
+			Возможность быстро создавать модули Brahma.module({});
+		*/
+		<%=$.snippet('methods/module.js')%> 
 		/*
 			API в стиле jQuery, работа с элементами, создание элементов и пр.
 		*/
@@ -181,6 +186,11 @@
 			Перехватываем глобальные события, такие как готовность документа
 		*/
 		<%=$.snippet('internals/domready.js')%>
+		/*
+			Дополнение document
+		*/
+		<%=$.snippet('internals/document.js')%>
+		
 		return Brahma;
 	};
 

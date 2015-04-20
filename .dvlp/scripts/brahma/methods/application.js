@@ -1,4 +1,4 @@
-Brahma.applications.addFabric('default',['events','fabrics'], function() {});
+Brahma.applications.addFabric('default',['events','fabrics','tie'], function() {});
 
 Brahma.applications.execute = function() {
 		// > Test for plugin exists
@@ -13,9 +13,19 @@ Brahma.applications.execute = function() {
 
 		plug.config = Brahma.extend(plug.config, options, true);
 
+		/* Import config from data-attributes */
+		if ("object"===typeof Brahma.applications.modules[arguments[0]].config) for (var prop in Brahma.applications.modules[arguments[0]].config) {
+			if (Brahma.applications.modules[arguments[0]].config.hasOwnProperty(prop)) {
+				var hyphenProp = Brahma.hyphens(prop);
+				if (Brahma(this).data(hyphenProp)!==null) plug.config[prop] = Brahma(this).data(hyphenProp);
+			}
+		};
+
 		plug.scope = plug.selector = this;
 		
 		plug.classname = arguments[0];
+
+
 		
 		// > ! Append life variable to element
 		Brahma(this)[0].component = plug;		

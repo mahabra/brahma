@@ -2,6 +2,14 @@ Updates
 --
 
 ## Versions
+### Version 1.3.16
+- data-attributes for config app
+- module()
+- some fixes
+
+### Version 1.3.13
+- Add args attribute to create function of fabric
+
 ### Version 1.3.12
 - Adds use and unbind function, updated inherit
 

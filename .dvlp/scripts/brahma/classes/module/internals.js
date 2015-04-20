@@ -31,14 +31,28 @@
 			@method create
 			Процес создание модуля фабрикой идентичен с процессом создания модуля модулем
 			*/
-			create: function(fabricName, extend) {
+			create: function(fabricName, extend, args) {
 				
-				var module = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
+				if (typeof extend === "function")  {
+					extend = Object(extend);
+					var prototype = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
+					if ("object"!==typeof extend.prototype) extend.prototype = prototype;
+					else Brahma.extend(extend.prototype, prototype);
+					var proto = function() {
 
-				Brahma.copyProps(module, extend);
+					};
+					proto.prototype = extend.prototype;
+					
+					var module = new proto;
+					extend.apply(module, args);
+				} else {
+					var module = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
+					Brahma.copyProps(module, extend);
+				}
+				
 				module.master = this.ref();
 				
-				this.fabrics[fabricName].constructor.call(module);
+				this.fabrics[fabricName].constructor.apply(module, args||[]);
 				return module;
 			},
 			/* Модуль устроен так, что его инициализация происходит только при его первом вызове, это исключает случай инициализации модуля в прототипе */
@@ -115,6 +129,10 @@
 
 				return this;
 			},
+			on: function() {
+				this.bind.apply(this, arguments);
+				return this;
+			},	
 			once : function(e, callback) {
 				this.bind(e, callback, true);
 				return this;

@@ -299,13 +299,21 @@ Brahma.nodeQuery = Brahma.vector.nodeQuery = function(query, root) {
 		*/
 		/**
 @method camelCase
-change dashed string to camel case style string
+convert dashed string to camel case style string
 
 */
 Brahma.camelCase = function(text) {
 	return text.replace(/-([\da-z])/gi, function( all, letter ) {
 		return letter.toUpperCase();
 	});
+};
+/**
+@method hyphens
+convert camel case to dashed string
+
+*/
+Brahma.hyphens = function(text) {
+	return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 };
 
 /**
@@ -470,6 +478,7 @@ Brahma.die= function(a) {
 	throw "Dharma error: "+(a||'unknown error');
 };
 
+		
 
 		/**
 			## Классы
@@ -551,14 +560,28 @@ Brahma.die= function(a) {
 			@method create
 			Процес создание модуля фабрикой идентичен с процессом создания модуля модулем
 			*/
-			create: function(fabricName, extend) {
+			create: function(fabricName, extend, args) {
 				
-				var module = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
+				if (typeof extend === "function")  {
+					extend = Object(extend);
+					var prototype = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
+					if ("object"!==typeof extend.prototype) extend.prototype = prototype;
+					else Brahma.extend(extend.prototype, prototype);
+					var proto = function() {
 
-				Brahma.copyProps(module, extend);
+					};
+					proto.prototype = extend.prototype;
+					
+					var module = new proto;
+					extend.apply(module, args);
+				} else {
+					var module = Brahma.industry.make('module', this.fabrics[fabricName].internals, this.fabrics[fabricName].proto);
+					Brahma.copyProps(module, extend);
+				}
+				
 				module.master = this.ref();
 				
-				this.fabrics[fabricName].constructor.call(module);
+				this.fabrics[fabricName].constructor.apply(module, args||[]);
 				return module;
 			},
 			/* Модуль устроен так, что его инициализация происходит только при его первом вызове, это исключает случай инициализации модуля в прототипе */
@@ -635,6 +658,10 @@ Brahma.die= function(a) {
 
 				return this;
 			},
+			on: function() {
+				this.bind.apply(this, arguments);
+				return this;
+			},	
 			once : function(e, callback) {
 				this.bind(e, callback, true);
 				return this;
@@ -777,7 +804,7 @@ Brahma.die= function(a) {
 			});
 			```
 		*/
-		Brahma.applications.addFabric('default',['events','fabrics'], function() {});
+		Brahma.applications.addFabric('default',['events','fabrics','tie'], function() {});
 
 Brahma.applications.execute = function() {
 		// > Test for plugin exists
@@ -792,9 +819,19 @@ Brahma.applications.execute = function() {
 
 		plug.config = Brahma.extend(plug.config, options, true);
 
+		/* Import config from data-attributes */
+		if ("object"===typeof Brahma.applications.modules[arguments[0]].config) for (var prop in Brahma.applications.modules[arguments[0]].config) {
+			if (Brahma.applications.modules[arguments[0]].config.hasOwnProperty(prop)) {
+				var hyphenProp = Brahma.hyphens(prop);
+				if (Brahma(this).data(hyphenProp)!==null) plug.config[prop] = Brahma(this).data(hyphenProp);
+			}
+		};
+
 		plug.scope = plug.selector = this;
 		
 		plug.classname = arguments[0];
+
+
 		
 		// > ! Append life variable to element
 		Brahma(this)[0].component = plug;		
@@ -868,7 +905,14 @@ Brahma.vector.use = function() {
 		};
 		return this;
 	});
-}
+} 
+		/*
+			Возможность быстро создавать модули Brahma.module({});
+		*/
+		Brahma.applications.addFabric('module',['events','tie'], function() {});
+Brahma.module = function(extend,args) {
+	return Brahma.applications.create('module',extend||{},args||[]);
+}; 
 		/*
 			API в стиле jQuery, работа с элементами, создание элементов и пр.
 		*/
@@ -898,16 +942,30 @@ Brahma.vector.empty = function() {
 
 Brahma.vector.remove = function() {
 	return Brahma.bench(this, arguments, function(elem) {
+		var parent; 
 		for (var q = 0;q<elem.length;q++) {
-			elem[q].parentNode.removeChild(elem[q]);
+			parent = elem[q].parentNode;
+			parent.removeChild(elem[q]);
 		}
-		return elem[q].parentNode;
+		return parent;
 	});
 };
 
 Brahma.vector.first = function() {
 	return Brahma.bench(this, arguments, function(elem) {
 		return Brahma(elem[0]);
+	});
+};
+
+Brahma.vector.width = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		return elem[0].offsetWidth;
+	});
+};
+
+Brahma.vector.height = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		return elem[0].offsetHeight;
 	});
 };
 
@@ -1055,7 +1113,21 @@ Brahma.vector.and = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		if (elem.length>0) {
 			var parent = Brahma(elem[0].parentNode);
+
 			return parent.put.apply(parent, args);
+		} else {
+			return null;
+		}
+	});
+};
+
+Brahma.vector.after = function() {
+	return Brahma.bench(this, arguments, function(elem, args) {
+		if (elem.length>0) {
+			var newNode = Brahma(elem[0].parentNode).put.apply(Brahma(elem[0].parentNode), args);
+			
+			elem[0].parentNode.insertBefore(newNode[0], elem[0].nextSibling);
+			return newNode;
 		} else {
 			return null;
 		}
@@ -1403,6 +1475,94 @@ Brahma.caniuse.info = {
 	Brahma.document.ready = true;
 	Brahma.trigger('domReady');
 });
+		/*
+			Дополнение document
+		*/
+		Brahma.document = Brahma.module({
+	eventCatchers: { // objects that catch events
+	}
+});
+/*
+	start event listners
+*/
+Brahma.document._startEventListing = function(e) {
+	var d = this;
+	var e = e;
+
+	// Create list for eventCatchers
+	("object" != typeof this.eventCatchers[e]) && (this.eventCatchers[e] = []);
+
+	// Add event listners
+	switch(e) {
+		case 'window.resize': // window resize
+
+			window.onresize = function() {
+
+				d.catchEvent(e, this, arguments);
+			};
+		break;
+		case 'document.keydown':
+			document.onkeydown = function() {
+
+				d.catchEvent(e, this, arguments);
+			};
+		break;
+		case 'document.keyup':
+			document.onkeyup = function() {
+
+				d.catchEvent(e, this, arguments);
+			};
+		break;
+		default:
+
+		break;
+	}
+};
+
+/*
+	Catch event
+*/
+Brahma.document.catchEvent = function(event, element, args) {
+	// Classic event trigger
+	this.trigger(event, args);
+
+	// Give event to ctachers
+	if ("object" == typeof this.eventCatchers[event])
+		var etd=[];
+		for (var c = 0; c<this.eventCatchers[event].length; c++) {
+			if ("object" == typeof this.eventCatchers[event][c] && "function" == typeof this.eventCatchers[event][c].trigger)
+			this.eventCatchers[event][c].trigger(event, args);
+			else etd.push(c);
+		}
+		// Delete corrupt objects
+		(etd.length>0) && (function(c, etd) {
+			var nc = [];
+			for (var e=0;e<c.length;e++) {
+				if (etd.indexOf(e)<0) nc.push(c[e]);
+			};
+			c = nc;
+		})(this.eventCatchers[event], etd);
+}
+
+/*
+	add object to event relistners
+*/
+Brahma.document.translateEvents = function(handler, events) {
+	/* test for event exists */
+	if ("string"==typeof events) events = [events];
+	for (var e = 0; e<events.length;e++) {
+		/* create event listner if not exists */
+		("object" != typeof this.eventListners[e]) && 
+		(function(e) {
+			var e = e;
+			this._startEventListing(e);				
+		}).call(this, events[e]);
+		/* append object to listners */
+		
+		this.eventCatchers[events[e]].push(handler);
+	};
+}
+		
 		return Brahma;
 	};
 

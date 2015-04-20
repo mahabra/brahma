@@ -24,16 +24,30 @@ Brahma.vector.empty = function() {
 
 Brahma.vector.remove = function() {
 	return Brahma.bench(this, arguments, function(elem) {
+		var parent; 
 		for (var q = 0;q<elem.length;q++) {
-			elem[q].parentNode.removeChild(elem[q]);
+			parent = elem[q].parentNode;
+			parent.removeChild(elem[q]);
 		}
-		return elem[q].parentNode;
+		return parent;
 	});
 };
 
 Brahma.vector.first = function() {
 	return Brahma.bench(this, arguments, function(elem) {
 		return Brahma(elem[0]);
+	});
+};
+
+Brahma.vector.width = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		return elem[0].offsetWidth;
+	});
+};
+
+Brahma.vector.height = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		return elem[0].offsetHeight;
 	});
 };
 
@@ -181,7 +195,21 @@ Brahma.vector.and = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
 		if (elem.length>0) {
 			var parent = Brahma(elem[0].parentNode);
+
 			return parent.put.apply(parent, args);
+		} else {
+			return null;
+		}
+	});
+};
+
+Brahma.vector.after = function() {
+	return Brahma.bench(this, arguments, function(elem, args) {
+		if (elem.length>0) {
+			var newNode = Brahma(elem[0].parentNode).put.apply(Brahma(elem[0].parentNode), args);
+			
+			elem[0].parentNode.insertBefore(newNode[0], elem[0].nextSibling);
+			return newNode;
 		} else {
 			return null;
 		}

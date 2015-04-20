@@ -1,12 +1,20 @@
 /**
 @method camelCase
-change dashed string to camel case style string
+convert dashed string to camel case style string
 
 */
 Brahma.camelCase = function(text) {
 	return text.replace(/-([\da-z])/gi, function( all, letter ) {
 		return letter.toUpperCase();
 	});
+};
+/**
+@method hyphens
+convert camel case to dashed string
+
+*/
+Brahma.hyphens = function(text) {
+	return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 };
 
 /**

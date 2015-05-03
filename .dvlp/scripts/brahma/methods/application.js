@@ -1,4 +1,4 @@
-Brahma.applications.addFabric('default',['events','fabrics','tie'], function() {});
+Brahma.applications.fabric('default',['events','fabrics','tie'], function() {});
 
 Brahma.applications.execute = function() {
 		// > Test for plugin exists
@@ -16,7 +16,7 @@ Brahma.applications.execute = function() {
 		/* Import config from data-attributes */
 		if ("object"===typeof Brahma.applications.modules[arguments[0]].config) for (var prop in Brahma.applications.modules[arguments[0]].config) {
 			if (Brahma.applications.modules[arguments[0]].config.hasOwnProperty(prop)) {
-				var hyphenProp = Brahma.hyphens(prop);
+				var hyphenProp = Brahma.dasherize(prop);
 				if (Brahma(this).data(hyphenProp)!==null) plug.config[prop] = Brahma(this).data(hyphenProp);
 			}
 		};
@@ -73,11 +73,7 @@ Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application 
 
 		// merge with $data and make it Brahma module
 		var component = Brahma.applications.create('default', $data);
-		/*
-		Этот момент нужно ещё протестировать, но нам нужно дополнительно дописать конфигурацию, потому что это протестировано.
-		*/
-		if (typeof $data.config === 'object') component.config = Brahma.extend(component.config, $data.config);
-
+		
 		Brahma.applications.modules[name] = component;
 		
 		if (!name) return this;

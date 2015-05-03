@@ -2,6 +2,19 @@ Updates
 --
 
 ## Versions
+### Version 1.3.18
+- Using Brahma(function(){}) to create context with Brahma at first arg
+- Function ref of object.prototype changed to Brahma.ref()
+- Adds Brahma.macros
+- Method of internal module fabric addFabric() changed to fabric(), 
+- Rename Brahma.camelCase() to Brahma.camelize(), hyphens() to dasherize()
+- Adds Brahma.pixelize() 
+- Adds Brahma.frame()
+- Fixed bug with zero-results selectors
+- Adds document tool
+- New functions: hide, show, width, height, outerWidth, outerHeight, is, not, before, condition, removeAttr, eq, unshift
+- Adds Brahma.document
+
 ### Version 1.3.16
 - data-attributes for config app
 - module()

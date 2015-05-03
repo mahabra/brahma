@@ -11,18 +11,12 @@ if (this === window) {
 			var options = {};
 			switch(typeof selector) {
 				case "function":
-					/*
-						Если передана функция, то мы должны выполнить её после готовности документа
-					*/
-					if (Brahma.document.ready) {
-						selector.call(this);
-					} else {
-						Brahma.bind('domReady', selector, true);
-					}
+					selector.call(this,Brahma);
 					
 					return Brahma(window);
 				break;
 				default:
+
 					var elements = Brahma.nodeQuery.call(this, selector);
 				break;
 			}
@@ -39,11 +33,12 @@ if (this === window) {
 		на тип "function".
 	*/
 	if ( ("object"===typeof elements || "function"===typeof elements) && elements.length) {
-		
 		for (var index=0;index<elements.length;index++) {
 			air[index] = elements[index];
 		}
-	};
+	} else {
+		index = 0;
+	}
 	
 	if (index>1) air.context = document;
 	else if (index>0) air.context = elements[0].parentNode;

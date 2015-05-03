@@ -1,9 +1,8 @@
-<%=$.snippet('hacks/refPrototype.js')%>
 <%=$.snippet('hacks/queryselector.js')%>
 ;(function() {
-	var BrahmaFactory; // Инициализируем факторию для использования внутри её же конструктора
+	var BrahmaStudioFactory; // Инициализируем факторию для использования внутри её же конструктора
 
-	var BrahmaFactory = function(userConfig) {
+	var BrahmaStudioFactory = function(userConfig) {
 		/* Конфигурируем производство бибилиотеки */
 		var factoryConfig = {
 		};
@@ -34,6 +33,11 @@
 		};
 
 		/*
+			Инструмент для создания ссылок на объекты
+		*/
+		<%=$.snippet('hacks/refPrototype.js')%>
+
+		/*
 			И прототип
 		*/
 		Brahma.vector = Brahma.prototype = {
@@ -55,6 +59,10 @@
 		Brahma.document = {
 			ready: false
 		};
+
+		/* Macros */
+		Brahma.macros = {};
+		<%=$.snippet('macros/dom.js')%>
 
 		/*
 			Функционал обработки селекторов
@@ -172,7 +180,7 @@
 			дополнительно.
 		*/
 		Brahma.cultivate = function() {
-			return BrahmaFactory(false);
+			return BrahmaStudioFactory(false);
 		}
 
 		/**
@@ -194,5 +202,5 @@
 		return Brahma;
 	};
 
-	window.Brahma = BrahmaFactory();
+	window.Brahma = window.Studio = BrahmaStudioFactory();
 })();

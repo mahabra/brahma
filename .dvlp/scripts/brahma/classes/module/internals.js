@@ -13,11 +13,11 @@
 			fabrics: {},
 			modules: {},
 			/**
-			@method addFabric
+			@method fabric
 			Модули способны содержать фабрики. Фабрики модулей вызываются с помощью функции create(fabricName, internals, proto) 
 			Т.е. фабрику, вместе со всеми настройками расширений можно задать заранее, но создать объект по этой схеме можно будет позже.
 			*/
-			addFabric : function(name, internals, constructor, proto) {
+			fabric : function(name, internals, constructor, proto) {
 				
 				this.fabrics[name] = {
 					constructor: constructor||function(){},
@@ -50,7 +50,7 @@
 					Brahma.copyProps(module, extend);
 				}
 				
-				module.master = this.ref();
+				module.master = Brahma.ref(this);
 				
 				this.fabrics[fabricName].constructor.apply(module, args||[]);
 				return module;
@@ -63,7 +63,7 @@
 
 				if (data||initial) {
 					// Создаем фабрику
-					this.addFabric(globalName, ['events'], initial, data||{});
+					this.fabric(globalName, ['events'], initial, data||{});
 					return this;
 				} else {
 					if ("undefined"===typeof this.modules[globalName]) {

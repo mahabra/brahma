@@ -33,6 +33,88 @@ Brahma.vector.remove = function() {
 	});
 };
 
+Brahma.vector.hide = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		for (var q = 0;q<elem.length;q++) {
+			// Save current station
+			var currentDisplay = Brahma(elem[q]).css("display");
+			if (currentDisplay!=="none") {
+				if ("undefined"===typeof elem[q].backupStyle) elem[q].backupStyle = {};
+				elem[q].backupStyle.display=currentDisplay;
+			};
+			Brahma(elem[q]).css("display", "none");
+		}
+		return Brahma(elem);
+	});
+};
+
+Brahma.vector.show = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		for (var q = 0;q<elem.length;q++) {
+			if ("undefined"!==typeof elem[q].backupStyle && elem[q].backupStyle.display) {
+				Brahma(elem[q]).css("display", elem[q].backupStyle.display);
+			}
+			else {
+				Brahma(elem[q]).css("display", "");
+			};
+		}
+		return Brahma(elem);
+	});
+};
+
+Brahma.vector.width = function() { return this[0].clientWidth; };
+
+Brahma.vector.height = function() { return this[0].clientWidth; };
+
+Brahma.vector.outerWidth = function() {
+	return Brahma(this[0]).width()+Brahma.macros.dom.pixelizeMargin(this[0],'left')+Brahma.macros.dom.pixelizeMargin(this[0],'right');
+};
+
+Brahma.vector.outerHeight = function() {
+	return Brahma(this[0]).height()+Brahma.macros.dom.pixelizeMargin(this[0],'top')+Brahma.macros.dom.pixelizeMargin(this[0],'bottom');
+};
+
+Brahma.vector.is = function(origq) {
+	var subject,test,pqs,qs;
+	var nativetest = function(subject) {
+		test = subject && ( subject.matches || subject[ 'webkitMatchesSelector' ] || subject[ 'mozMatchesSelector' ] || subject[ 'msMatchesSelector' ] );
+		if (!(!!test && test.call( subject, origq ))) return false;
+		return true;
+	};
+	(function(p) { qs=p[0].trim(); pqs=p[1]?p[1].trim():false; })(origq.split(':'));
+	return Brahma.bench(this, arguments, function(elem) {
+		if (elem.length===0) return false;
+		for (var q = 0;q<elem.length;q++) {
+			try {
+				if (!nativetest(elem[ q ])) return false;
+			} catch(e) {
+				// Test for pseudo selector
+				if (pqs&&!Brahma.macros.dom.pseusoQueryMatch(elem[ q ], pqs)) return false;
+			}
+		};
+		return true;
+	});
+}
+
+Brahma.vector.not = function(qs) {
+	var subject,test,eq,kit=[];
+	("array"!==typeof qs)&&(qs=[qs]);
+	return Brahma.bench(this, arguments, function(elem) {
+		
+		for (var q = 0;q<elem.length;q++) {
+			subject = elem[ q ];
+			test = subject && ( subject.matches || subject[ 'webkitMatchesSelector' ] || subject[ 'mozMatchesSelector' ] || subject[ 'msMatchesSelector' ] );
+			eq=false;
+			for (var s = 0;s<qs.length;s++) {
+				if (qs[s]==="") continue;
+				if ((!!test && test.call( subject, qs[s] ))) { eq=!0; break; }
+			};
+			if (!eq) kit.push(elem[ q ]);
+		};
+		return Brahma(kit);
+	});
+}
+
 Brahma.vector.first = function() {
 	return Brahma.bench(this, arguments, function(elem) {
 		return Brahma(elem[0]);
@@ -151,9 +233,13 @@ Brahma.vector.put = function() {
 		Brahma(elem).each(function(element) {
 			switch(typeof args[0]) {
 				case "object":
-					var newElement = args[0];
-					element.appendChild(newElement);
-					kit.push(newElement);
+
+					Brahma(args[0]).each(function() {
+						
+						element.appendChild(this);
+					});	
+					
+					kit.push(element);
 				break;
 				case "string":
 					var nodeName = args[0].trim().toUpperCase();
@@ -167,13 +253,13 @@ Brahma.vector.put = function() {
 	return Brahma(kit);
 };
 
-Brahma.vector.shift = function() {
+Brahma.vector.unshift = function() {
 	var kit = [];
 	Brahma.bench(this, arguments, function(elem, args) {
 		Brahma(elem).each(function(element) {
 			switch(typeof args[0]) {
 				case "object":
-					var newElement = args[0];
+					var newElement = Brahma(args[0])[0];
 					if (element.firstChild!==null)
 					element.insertBefore(newElement, element.firstChild);
 					else element.appendChild(newElement);
@@ -202,6 +288,29 @@ Brahma.vector.and = function() {
 		}
 	});
 };
+
+Brahma.vector.before = function() {
+	var kit = [];
+	Brahma.bench(this, arguments, function(elem, args) {
+		Brahma(elem).each(function(element) {
+
+			switch(typeof args[0]) {
+				case "object":
+					var newElement = args[0];
+				break;
+				case "string":
+					var nodeName = args[0].trim().toUpperCase();
+					var attrs = args[1]||{};
+					var newElement = Brahma(element).createNode(nodeName, attrs, true)[0];
+				break;
+			};
+			element.parentNode.insertBefore(newElement, element);
+			kit.push(newElement);
+		});
+	});
+	return Brahma(kit);
+};
+
 
 Brahma.vector.after = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
@@ -260,18 +369,35 @@ Brahma.vector.tie = function(cb) {
 	return this;
 }
 
+Brahma.vector.condition = function(condition, ontrue, onfalse) {
+	if (condition) {
+		if ("function"===typeof ontrue) return ontrue.call(this);
+	} else {
+		if ("function"===typeof onfalse) return onfalse.call(this);
+	}
+	return this;
+}
+
 Brahma.addEvent = function(elem, type, userEventHandler, once) {
 	var eventHandler;
-	eventHandler = once ? function() { 
-		userEventHandler.apply(this, arguments); 
-		if ( elem.addEventListener ) {
-			elem.removeEventListener(type, eventHandler, false);
-		}  else if ( elem.attachEvent ) {
-			 element.detachEvent("on" + type, eventHandler);
-		} else {
-			elem["on"+type] = null;
+
+	eventHandler = function(e) {
+		if (once) {
+			if ( elem.addEventListener ) {
+				elem.removeEventListener(type, eventHandler, false);
+			}  else if ( elem.attachEvent ) {
+				 element.detachEvent("on" + type, eventHandler);
+			} else {
+				elem["on"+type] = null;
+			};
 		};
-	} : userEventHandler;
+
+		// Prevent default event handler if user returns false
+		if ((function(r) { return (typeof r==="boolean" && r===false) })(userEventHandler.apply(this, arguments))) {
+
+			e.preventDefault();
+		};
+	};
     if (elem == null || typeof(elem) == 'undefined') return;
     if ( elem.addEventListener ) {
 
@@ -371,7 +497,7 @@ Brahma.vector.css = function() {
 
 Brahma.vector.data = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
-		var key = Brahma.camelCase(args[0]);
+		var key = Brahma.camelize(args[0]);
 		for (var i = 0;i<elem.length;i++) {
 			if (args.length>1) {
 				if (args[1]===null) {
@@ -429,9 +555,22 @@ Brahma.vector.attr = function() {
 	});
 };
 
+Brahma.vector.removeAttr = function() {
+	return Brahma.bench(this, arguments, function(elem, args) {
+		Brahma(elem).each(function() {							
+			this.removeAttribute(args[0]);
+		});
+	});
+};
+
 Brahma.vector.scroll = function() {
 	var doc = document.documentElement;
 	var left = (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
 	var top = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
 	return {left: left, top: top};
 };
+
+/* Возвращает из найденных элементов, элемент в индексом index */
+Brahma.vector.eq = function(index) {
+	return Brahma(this[index]);
+}

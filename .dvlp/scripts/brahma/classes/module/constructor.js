@@ -3,7 +3,7 @@ function() {
 	("string"===typeof arguments[0]) ? (name=arguments[0],internals=arguments[1]||[]) : (name=false,internals=arguments[0]||[]);
 	
 	var module = Brahma.inherit(Brahma.classes.module.proto);
-	module.master = this.ref();
+	module.master = Brahma.ref(this);
 	
 	//if (name) this.modules[name] = module;
 	/* Каждый модуль может быть снабжден расширениями */

@@ -3,7 +3,7 @@
 convert dashed string to camel case style string
 
 */
-Brahma.camelCase = function(text) {
+Brahma.camelize = function(text) {
 	return text.replace(/-([\da-z])/gi, function( all, letter ) {
 		return letter.toUpperCase();
 	});
@@ -13,8 +13,28 @@ Brahma.camelCase = function(text) {
 convert camel case to dashed string
 
 */
-Brahma.hyphens = function(text) {
+Brahma.dasherize = function(text) {
 	return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+};
+
+
+/* 
+Возвращает величину в пикселях, получая число % или px 
+@param value число
+@param quantity контекстная величина в пикселях
+*/
+Brahma.pixelize = function(value, quantity) {
+	if ("string" == typeof value) {
+		if (value.substr(-1)==='%') {
+			return ((quantity/100)* (value.substring(0, value.length-1)));
+		} else {
+			return parseInt(value.split('px').join(''));
+		}
+	} else {
+		return value;
+	}
+	
+	return parseInt(value);
 };
 
 /**
@@ -111,7 +131,7 @@ Brahma.extend = function() {
 					
 					if (recrusive) {
 						if ("object"!==typeof target[i]) target[i] = {};
-						Brahma.exetnd(target[i], proto[i]);
+						Brahma.extend(target[i], proto[i]);
 					}
 					else {
 						target[i] = {};
@@ -137,19 +157,21 @@ Brahma.extend = function() {
 	return target;
 };
 
-/* 
-Возвращает величину в пикселях, получая число % или px 
-@param value число
-@param quantity контекстная величина в пикселях
-*/
-Brahma.percentEq = function(value, quantity) {
-	
-	if ("string" == typeof value&&value.substr(-1)==='%') {
-		return ((quantity/100)* (value.substring(0, value.length-1)));
+
+/* Полифил для requestAnimationFrame */
+(function() {
+	var vendors = ['ms', 'moz', 'webkit', 'o'],customRequestAnimationFrame=window.requestAnimationFrame,customCancelAnimationFrame=window.cancelAnimationFrame;
+	for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+	   customRequestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+	   customCancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
+	                               || window[vendors[x]+'CancelRequestAnimationFrame'];
 	};
-	
-	return parseInt(value);
-};
+	Brahma.frame = function() {
+		customRequestAnimationFrame.apply(window, arguments);
+	};
+})();
+
+
 /*
 Парсит строку деклараций в ситаксисе разметки CSS
 Brahma.parseCssDeclarations("background-color:red"); // {"background-color": "red"}
@@ -175,6 +197,6 @@ Brahma.parseCssDeclarations = function(cssDeclarations) {
 /*
 Перехват ошибки
 */
-Brahma.die= function(a) {
+Brahma.die = function(a) {
 	throw "Dharma error: "+(a||'unknown error');
 };

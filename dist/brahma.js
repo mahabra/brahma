@@ -1,9 +1,3 @@
-Object.prototype.ref = function() {
-	function Ref() {};
-	Ref.prototype = this;
-	Ref.prototype.constructor = Ref;
-	return new Ref;
-};
 /*
 IE не поддерживает scope: в querySelector, поэтому требуется альтернативное решение.
 Решение найдено здесь: https://github.com/lazd/scopedQuerySelectorShim
@@ -84,9 +78,9 @@ IE не поддерживает scope: в querySelector, поэтому тре�
   }
 }());
 ;(function() {
-	var BrahmaFactory; // Инициализируем факторию для использования внутри её же конструктора
+	var BrahmaStudioFactory; // Инициализируем факторию для использования внутри её же конструктора
 
-	var BrahmaFactory = function(userConfig) {
+	var BrahmaStudioFactory = function(userConfig) {
 		/* Конфигурируем производство бибилиотеки */
 		var factoryConfig = {
 		};
@@ -126,18 +120,12 @@ IE не поддерживает scope: в querySelector, поэтому тре�
 			var options = {};
 			switch(typeof selector) {
 				case "function":
-					/*
-						Если передана функция, то мы должны выполнить её после готовности документа
-					*/
-					if (Brahma.document.ready) {
-						selector.call(this);
-					} else {
-						Brahma.bind('domReady', selector, true);
-					}
+					selector.call(this,Brahma);
 					
 					return Brahma(window);
 				break;
 				default:
+
 					var elements = Brahma.nodeQuery.call(this, selector);
 				break;
 			}
@@ -154,11 +142,12 @@ IE не поддерживает scope: в querySelector, поэтому тре�
 		на тип "function".
 	*/
 	if ( ("object"===typeof elements || "function"===typeof elements) && elements.length) {
-		
 		for (var index=0;index<elements.length;index++) {
 			air[index] = elements[index];
 		}
-	};
+	} else {
+		index = 0;
+	}
 	
 	if (index>1) air.context = document;
 	else if (index>0) air.context = elements[0].parentNode;
@@ -169,6 +158,29 @@ IE не поддерживает scope: в querySelector, поэтому тре�
 	return air;
 }
 		};
+
+		/*
+			Инструмент для создания ссылок на объекты
+		*/
+		/*
+В идеале это должно быть в прототипе, но подобная модификация вызывает проблемы совместимости с библиотеками, не проверяющими hasOwnProperty
+Object.prototype.ref = function() {
+	function Ref() {};
+	Ref.prototype = this;
+	Ref.prototype.constructor = Ref;
+	return new Ref;
+};
+
+Функция создает объект, ссылающийся на другой. Соль в том, что ссылка будет происходить через прототип, а сам конструктор объекта будет типа Ref.
+	Это позволит его отличать от обычной ссылки на объект при клонировании.
+*/
+
+Brahma.ref = function(proto) {
+	function Ref() {};
+	Ref.prototype = proto||this;
+	Ref.prototype.constructor = Ref;
+	return new Ref;
+};
 
 		/*
 			И прототип
@@ -192,6 +204,36 @@ IE не поддерживает scope: в querySelector, поэтому тре�
 		Brahma.document = {
 			ready: false
 		};
+
+		/* Macros */
+		Brahma.macros = {};
+		Brahma.macros.dom = {};
+
+/* 
+Проверяет subject HTMLElement на соответствие псевдоuqery 
+:visible проверка на видимости элемента (не проверяет фактор видимости в зависимости от расположения элемента )
+:seeable временно не поддержвается!!!
+*/
+Brahma.macros.dom.pseusoQueryMatch = function(subject,pqs) {
+	switch(pqs) {
+		case 'visible':
+			return  (function(cstyle) {
+				return !(cstyle.display==="none" || cstyle.visibility==="hidden" || parseInt(cstyle.opacity)===0);
+			})(window.getComputedStyle(subject));
+		break;
+
+	}
+};
+
+/*
+Возвращает margin элемента в пикселях, даже если оно указано в процентах.
+*/
+Brahma.macros.dom.pixelizeMargin = function(subject, direction) {
+	direction=direction.toLowerCase();
+
+	var ml = window.getComputedStyle(subject)['margin'+String(direction.charAt(0)).toUpperCase()+direction.substr(1)];
+	return Brahma.pixelize(ml, (direction==='left'||direction==='right')?subject.parentNode.clientWidth:subject.parentNode.clientHeight);
+};
 
 		/*
 			Функционал обработки селекторов
@@ -265,6 +307,7 @@ Brahma.nodeQuery = Brahma.vector.nodeQuery = function(query, root) {
 		break;
 		case 'object':
 			if (query instanceof Array) {
+				
 				return query;
 			} else {
 				// test for window
@@ -302,7 +345,7 @@ Brahma.nodeQuery = Brahma.vector.nodeQuery = function(query, root) {
 convert dashed string to camel case style string
 
 */
-Brahma.camelCase = function(text) {
+Brahma.camelize = function(text) {
 	return text.replace(/-([\da-z])/gi, function( all, letter ) {
 		return letter.toUpperCase();
 	});
@@ -312,8 +355,28 @@ Brahma.camelCase = function(text) {
 convert camel case to dashed string
 
 */
-Brahma.hyphens = function(text) {
+Brahma.dasherize = function(text) {
 	return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+};
+
+
+/* 
+Возвращает величину в пикселях, получая число % или px 
+@param value число
+@param quantity контекстная величина в пикселях
+*/
+Brahma.pixelize = function(value, quantity) {
+	if ("string" == typeof value) {
+		if (value.substr(-1)==='%') {
+			return ((quantity/100)* (value.substring(0, value.length-1)));
+		} else {
+			return parseInt(value.split('px').join(''));
+		}
+	} else {
+		return value;
+	}
+	
+	return parseInt(value);
 };
 
 /**
@@ -410,7 +473,7 @@ Brahma.extend = function() {
 					
 					if (recrusive) {
 						if ("object"!==typeof target[i]) target[i] = {};
-						Brahma.exetnd(target[i], proto[i]);
+						Brahma.extend(target[i], proto[i]);
 					}
 					else {
 						target[i] = {};
@@ -436,19 +499,21 @@ Brahma.extend = function() {
 	return target;
 };
 
-/* 
-Возвращает величину в пикселях, получая число % или px 
-@param value число
-@param quantity контекстная величина в пикселях
-*/
-Brahma.percentEq = function(value, quantity) {
-	
-	if ("string" == typeof value&&value.substr(-1)==='%') {
-		return ((quantity/100)* (value.substring(0, value.length-1)));
+
+/* Полифил для requestAnimationFrame */
+(function() {
+	var vendors = ['ms', 'moz', 'webkit', 'o'],customRequestAnimationFrame=window.requestAnimationFrame,customCancelAnimationFrame=window.cancelAnimationFrame;
+	for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+	   customRequestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+	   customCancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
+	                               || window[vendors[x]+'CancelRequestAnimationFrame'];
 	};
-	
-	return parseInt(value);
-};
+	Brahma.frame = function() {
+		customRequestAnimationFrame.apply(window, arguments);
+	};
+})();
+
+
 /*
 Парсит строку деклараций в ситаксисе разметки CSS
 Brahma.parseCssDeclarations("background-color:red"); // {"background-color": "red"}
@@ -474,7 +539,7 @@ Brahma.parseCssDeclarations = function(cssDeclarations) {
 /*
 Перехват ошибки
 */
-Brahma.die= function(a) {
+Brahma.die = function(a) {
 	throw "Dharma error: "+(a||'unknown error');
 };
 
@@ -499,7 +564,7 @@ Brahma.die= function(a) {
 	("string"===typeof arguments[0]) ? (name=arguments[0],internals=arguments[1]||[]) : (name=false,internals=arguments[0]||[]);
 	
 	var module = Brahma.inherit(Brahma.classes.module.proto);
-	module.master = this.ref();
+	module.master = Brahma.ref(this);
 	
 	//if (name) this.modules[name] = module;
 	/* Каждый модуль может быть снабжден расширениями */
@@ -542,11 +607,11 @@ Brahma.die= function(a) {
 			fabrics: {},
 			modules: {},
 			/**
-			@method addFabric
+			@method fabric
 			Модули способны содержать фабрики. Фабрики модулей вызываются с помощью функции create(fabricName, internals, proto) 
 			Т.е. фабрику, вместе со всеми настройками расширений можно задать заранее, но создать объект по этой схеме можно будет позже.
 			*/
-			addFabric : function(name, internals, constructor, proto) {
+			fabric : function(name, internals, constructor, proto) {
 				
 				this.fabrics[name] = {
 					constructor: constructor||function(){},
@@ -579,7 +644,7 @@ Brahma.die= function(a) {
 					Brahma.copyProps(module, extend);
 				}
 				
-				module.master = this.ref();
+				module.master = Brahma.ref(this);
 				
 				this.fabrics[fabricName].constructor.apply(module, args||[]);
 				return module;
@@ -592,7 +657,7 @@ Brahma.die= function(a) {
 
 				if (data||initial) {
 					// Создаем фабрику
-					this.addFabric(globalName, ['events'], initial, data||{});
+					this.fabric(globalName, ['events'], initial, data||{});
 					return this;
 				} else {
 					if ("undefined"===typeof this.modules[globalName]) {
@@ -804,7 +869,7 @@ Brahma.die= function(a) {
 			});
 			```
 		*/
-		Brahma.applications.addFabric('default',['events','fabrics','tie'], function() {});
+		Brahma.applications.fabric('default',['events','fabrics','tie'], function() {});
 
 Brahma.applications.execute = function() {
 		// > Test for plugin exists
@@ -822,7 +887,7 @@ Brahma.applications.execute = function() {
 		/* Import config from data-attributes */
 		if ("object"===typeof Brahma.applications.modules[arguments[0]].config) for (var prop in Brahma.applications.modules[arguments[0]].config) {
 			if (Brahma.applications.modules[arguments[0]].config.hasOwnProperty(prop)) {
-				var hyphenProp = Brahma.hyphens(prop);
+				var hyphenProp = Brahma.dasherize(prop);
 				if (Brahma(this).data(hyphenProp)!==null) plug.config[prop] = Brahma(this).data(hyphenProp);
 			}
 		};
@@ -879,11 +944,7 @@ Brahma.app = Brahma.application = Brahma.vector.app = Brahma.vector.application 
 
 		// merge with $data and make it Brahma module
 		var component = Brahma.applications.create('default', $data);
-		/*
-		Этот момент нужно ещё протестировать, но нам нужно дополнительно дописать конфигурацию, потому что это протестировано.
-		*/
-		if (typeof $data.config === 'object') component.config = Brahma.extend(component.config, $data.config);
-
+		
 		Brahma.applications.modules[name] = component;
 		
 		if (!name) return this;
@@ -909,7 +970,7 @@ Brahma.vector.use = function() {
 		/*
 			Возможность быстро создавать модули Brahma.module({});
 		*/
-		Brahma.applications.addFabric('module',['events','tie'], function() {});
+		Brahma.applications.fabric('module',['events','tie'], function() {});
 Brahma.module = function(extend,args) {
 	return Brahma.applications.create('module',extend||{},args||[]);
 }; 
@@ -950,6 +1011,88 @@ Brahma.vector.remove = function() {
 		return parent;
 	});
 };
+
+Brahma.vector.hide = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		for (var q = 0;q<elem.length;q++) {
+			// Save current station
+			var currentDisplay = Brahma(elem[q]).css("display");
+			if (currentDisplay!=="none") {
+				if ("undefined"===typeof elem[q].backupStyle) elem[q].backupStyle = {};
+				elem[q].backupStyle.display=currentDisplay;
+			};
+			Brahma(elem[q]).css("display", "none");
+		}
+		return Brahma(elem);
+	});
+};
+
+Brahma.vector.show = function() {
+	return Brahma.bench(this, arguments, function(elem) {
+		for (var q = 0;q<elem.length;q++) {
+			if ("undefined"!==typeof elem[q].backupStyle && elem[q].backupStyle.display) {
+				Brahma(elem[q]).css("display", elem[q].backupStyle.display);
+			}
+			else {
+				Brahma(elem[q]).css("display", "");
+			};
+		}
+		return Brahma(elem);
+	});
+};
+
+Brahma.vector.width = function() { return this[0].clientWidth; };
+
+Brahma.vector.height = function() { return this[0].clientWidth; };
+
+Brahma.vector.outerWidth = function() {
+	return Brahma(this[0]).width()+Brahma.macros.dom.pixelizeMargin(this[0],'left')+Brahma.macros.dom.pixelizeMargin(this[0],'right');
+};
+
+Brahma.vector.outerHeight = function() {
+	return Brahma(this[0]).height()+Brahma.macros.dom.pixelizeMargin(this[0],'top')+Brahma.macros.dom.pixelizeMargin(this[0],'bottom');
+};
+
+Brahma.vector.is = function(origq) {
+	var subject,test,pqs,qs;
+	var nativetest = function(subject) {
+		test = subject && ( subject.matches || subject[ 'webkitMatchesSelector' ] || subject[ 'mozMatchesSelector' ] || subject[ 'msMatchesSelector' ] );
+		if (!(!!test && test.call( subject, origq ))) return false;
+		return true;
+	};
+	(function(p) { qs=p[0].trim(); pqs=p[1]?p[1].trim():false; })(origq.split(':'));
+	return Brahma.bench(this, arguments, function(elem) {
+		if (elem.length===0) return false;
+		for (var q = 0;q<elem.length;q++) {
+			try {
+				if (!nativetest(elem[ q ])) return false;
+			} catch(e) {
+				// Test for pseudo selector
+				if (pqs&&!Brahma.macros.dom.pseusoQueryMatch(elem[ q ], pqs)) return false;
+			}
+		};
+		return true;
+	});
+}
+
+Brahma.vector.not = function(qs) {
+	var subject,test,eq,kit=[];
+	("array"!==typeof qs)&&(qs=[qs]);
+	return Brahma.bench(this, arguments, function(elem) {
+		
+		for (var q = 0;q<elem.length;q++) {
+			subject = elem[ q ];
+			test = subject && ( subject.matches || subject[ 'webkitMatchesSelector' ] || subject[ 'mozMatchesSelector' ] || subject[ 'msMatchesSelector' ] );
+			eq=false;
+			for (var s = 0;s<qs.length;s++) {
+				if (qs[s]==="") continue;
+				if ((!!test && test.call( subject, qs[s] ))) { eq=!0; break; }
+			};
+			if (!eq) kit.push(elem[ q ]);
+		};
+		return Brahma(kit);
+	});
+}
 
 Brahma.vector.first = function() {
 	return Brahma.bench(this, arguments, function(elem) {
@@ -1069,9 +1212,13 @@ Brahma.vector.put = function() {
 		Brahma(elem).each(function(element) {
 			switch(typeof args[0]) {
 				case "object":
-					var newElement = args[0];
-					element.appendChild(newElement);
-					kit.push(newElement);
+
+					Brahma(args[0]).each(function() {
+						
+						element.appendChild(this);
+					});	
+					
+					kit.push(element);
 				break;
 				case "string":
 					var nodeName = args[0].trim().toUpperCase();
@@ -1085,13 +1232,13 @@ Brahma.vector.put = function() {
 	return Brahma(kit);
 };
 
-Brahma.vector.shift = function() {
+Brahma.vector.unshift = function() {
 	var kit = [];
 	Brahma.bench(this, arguments, function(elem, args) {
 		Brahma(elem).each(function(element) {
 			switch(typeof args[0]) {
 				case "object":
-					var newElement = args[0];
+					var newElement = Brahma(args[0])[0];
 					if (element.firstChild!==null)
 					element.insertBefore(newElement, element.firstChild);
 					else element.appendChild(newElement);
@@ -1120,6 +1267,29 @@ Brahma.vector.and = function() {
 		}
 	});
 };
+
+Brahma.vector.before = function() {
+	var kit = [];
+	Brahma.bench(this, arguments, function(elem, args) {
+		Brahma(elem).each(function(element) {
+
+			switch(typeof args[0]) {
+				case "object":
+					var newElement = args[0];
+				break;
+				case "string":
+					var nodeName = args[0].trim().toUpperCase();
+					var attrs = args[1]||{};
+					var newElement = Brahma(element).createNode(nodeName, attrs, true)[0];
+				break;
+			};
+			element.parentNode.insertBefore(newElement, element);
+			kit.push(newElement);
+		});
+	});
+	return Brahma(kit);
+};
+
 
 Brahma.vector.after = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
@@ -1178,18 +1348,35 @@ Brahma.vector.tie = function(cb) {
 	return this;
 }
 
+Brahma.vector.condition = function(condition, ontrue, onfalse) {
+	if (condition) {
+		if ("function"===typeof ontrue) return ontrue.call(this);
+	} else {
+		if ("function"===typeof onfalse) return onfalse.call(this);
+	}
+	return this;
+}
+
 Brahma.addEvent = function(elem, type, userEventHandler, once) {
 	var eventHandler;
-	eventHandler = once ? function() { 
-		userEventHandler.apply(this, arguments); 
-		if ( elem.addEventListener ) {
-			elem.removeEventListener(type, eventHandler, false);
-		}  else if ( elem.attachEvent ) {
-			 element.detachEvent("on" + type, eventHandler);
-		} else {
-			elem["on"+type] = null;
+
+	eventHandler = function(e) {
+		if (once) {
+			if ( elem.addEventListener ) {
+				elem.removeEventListener(type, eventHandler, false);
+			}  else if ( elem.attachEvent ) {
+				 element.detachEvent("on" + type, eventHandler);
+			} else {
+				elem["on"+type] = null;
+			};
 		};
-	} : userEventHandler;
+
+		// Prevent default event handler if user returns false
+		if ((function(r) { return (typeof r==="boolean" && r===false) })(userEventHandler.apply(this, arguments))) {
+
+			e.preventDefault();
+		};
+	};
     if (elem == null || typeof(elem) == 'undefined') return;
     if ( elem.addEventListener ) {
 
@@ -1289,7 +1476,7 @@ Brahma.vector.css = function() {
 
 Brahma.vector.data = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
-		var key = Brahma.camelCase(args[0]);
+		var key = Brahma.camelize(args[0]);
 		for (var i = 0;i<elem.length;i++) {
 			if (args.length>1) {
 				if (args[1]===null) {
@@ -1347,12 +1534,25 @@ Brahma.vector.attr = function() {
 	});
 };
 
+Brahma.vector.removeAttr = function() {
+	return Brahma.bench(this, arguments, function(elem, args) {
+		Brahma(elem).each(function() {							
+			this.removeAttribute(args[0]);
+		});
+	});
+};
+
 Brahma.vector.scroll = function() {
 	var doc = document.documentElement;
 	var left = (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
 	var top = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
 	return {left: left, top: top};
 };
+
+/* Возвращает из найденных элементов, элемент в индексом index */
+Brahma.vector.eq = function(index) {
+	return Brahma(this[index]);
+}
 
 		/**
 			## Brahma.cultivate
@@ -1361,7 +1561,7 @@ Brahma.vector.scroll = function() {
 			дополнительно.
 		*/
 		Brahma.cultivate = function() {
-			return BrahmaFactory(false);
+			return BrahmaStudioFactory(false);
 		}
 
 		/**
@@ -1478,14 +1678,27 @@ Brahma.caniuse.info = {
 		/*
 			Дополнение document
 		*/
-		Brahma.document = Brahma.module({
-	eventCatchers: { // objects that catch events
+		var brahmaHTMLDoc = function(cb) {
+	if (Brahma.document.ready) {
+		cb.call(Brahma.document);
+	} else {
+		Brahma.bind('DOMReady', cb);
 	}
-});
+};
+
+/* Расширяем модуль событиями */
+Brahma.extend(brahmaHTMLDoc, Brahma.classes.module.internals.events.proto);
+
+brahmaHTMLDoc.eventCatchers = { // objects that catch events
+
+};
+
+brahmaHTMLDoc.ready = false;
+
 /*
 	start event listners
 */
-Brahma.document._startEventListing = function(e) {
+brahmaHTMLDoc._startEventListing = function(e) {
 	var d = this;
 	var e = e;
 
@@ -1522,7 +1735,7 @@ Brahma.document._startEventListing = function(e) {
 /*
 	Catch event
 */
-Brahma.document.catchEvent = function(event, element, args) {
+brahmaHTMLDoc.catchEvent = function(event, element, args) {
 	// Classic event trigger
 	this.trigger(event, args);
 
@@ -1547,7 +1760,7 @@ Brahma.document.catchEvent = function(event, element, args) {
 /*
 	add object to event relistners
 */
-Brahma.document.translateEvents = function(handler, events) {
+brahmaHTMLDoc.translateEvents = function(handler, events) {
 	/* test for event exists */
 	if ("string"==typeof events) events = [events];
 	for (var e = 0; e<events.length;e++) {
@@ -1562,9 +1775,52 @@ Brahma.document.translateEvents = function(handler, events) {
 		this.eventCatchers[events[e]].push(handler);
 	};
 }
+
+/*
+Document zindex
+*/
+brahmaHTMLDoc.zindex = {
+	max: 0,
+	all	: [],
+	recalc	: function() {
+		while (!this.all[this.max] && this.max!=0) {
+			this.max--;
+		};
+	},
+	get : function(count) {
+		for(var i = 1; i<=count; i++) {
+			this.all[this.max+i] = true;
+		};
+		
+		this.max += count;
+		
+		return this.max-(count-1);
+	},
+	free : function(index, count) {
+		if (typeof(index) != 'object') {
+			indexes = [index];
+			if (typeof(count) == 'number') {
+				for (var i=1;i<count;i++) {
+					
+					indexes.push(index+i);
+				};
+			};
+		} else {
+			var indexes = [index];
+		};
+		
+		for (var i=0;i<indexes.length;i++) {
+			
+			brahmaHTMLDoc.zindex.all[indexes[i]] = false;
+		};
+		brahmaHTMLDoc.zindex.recalc();
+	}
+};
+
+Brahma.document = brahmaHTMLDoc;
 		
 		return Brahma;
 	};
 
-	window.Brahma = BrahmaFactory();
+	window.Brahma = window.Studio = BrahmaStudioFactory();
 })();

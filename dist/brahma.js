@@ -359,6 +359,19 @@ Brahma.dasherize = function(text) {
 	return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 };
 
+/**
+@method millisify
+convert s of ms to integer (ms)
+millisify("0.5s") = 500
+millisify("1ms") = 1
+*/
+Brahma.millisify = function(mss) {
+	(sms.charAt(0)==='.')?(d=10,sms=sms.substr(1)):(d=1);
+    if (sms.substr(-2)==='ms') return parseFloat(sms)/d;
+    if (sms.substr(-1)==='s') return parseFloat(sms)*1000/d;
+    if (sms.substr(-1)==='h') return parseFloat(sms)*60000/d;
+    return parseFloat(sms)/d;
+};
 
 /* 
 Возвращает величину в пикселях, получая число % или px 
@@ -884,6 +897,13 @@ Brahma.applications.execute = function() {
 
 		plug.config = Brahma.extend(plug.config, options, true);
 
+		/* Import config from data-*appName* */
+		;(function(cfg) {
+			if (cfg!==null) {
+				Brahma.copyProps(plug.config, Brahma.parseCssDeclarations(cfg))
+			};
+		}).call(this, Brahma(this).data(Brahma.dasherize(arguments[0])));
+
 		/* Import config from data-attributes */
 		if ("object"===typeof Brahma.applications.modules[arguments[0]].config) for (var prop in Brahma.applications.modules[arguments[0]].config) {
 			if (Brahma.applications.modules[arguments[0]].config.hasOwnProperty(prop)) {
@@ -891,6 +911,7 @@ Brahma.applications.execute = function() {
 				if (Brahma(this).data(hyphenProp)!==null) plug.config[prop] = Brahma(this).data(hyphenProp);
 			}
 		};
+
 
 		plug.scope = plug.selector = this;
 		
@@ -1727,7 +1748,12 @@ brahmaHTMLDoc._startEventListing = function(e) {
 			};
 		break;
 		default:
-
+			/* Split event string when first part is selector, second is origin event name */
+			var parts = e.split('.');
+			
+			Brahma(parts[0]).bind(parts[1], function() {
+				d.catchEvent(e, this, arguments);
+			});
 		break;
 	}
 };

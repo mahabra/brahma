@@ -2,6 +2,11 @@ Updates
 --
 
 ## Versions
+### Version 1.4.2
+- millisify()
+- data-*appName* attr config
+- document.translateEvents [selector].[event] syntax
+
 ### Version 1.3.18
 - Using Brahma(function(){}) to create context with Brahma at first arg
 - Function ref of object.prototype changed to Brahma.ref()

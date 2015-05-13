@@ -13,6 +13,13 @@ Brahma.applications.execute = function() {
 
 		plug.config = Brahma.extend(plug.config, options, true);
 
+		/* Import config from data-*appName* */
+		;(function(cfg) {
+			if (cfg!==null) {
+				Brahma.copyProps(plug.config, Brahma.parseCssDeclarations(cfg))
+			};
+		}).call(this, Brahma(this).data(Brahma.dasherize(arguments[0])));
+
 		/* Import config from data-attributes */
 		if ("object"===typeof Brahma.applications.modules[arguments[0]].config) for (var prop in Brahma.applications.modules[arguments[0]].config) {
 			if (Brahma.applications.modules[arguments[0]].config.hasOwnProperty(prop)) {
@@ -20,6 +27,7 @@ Brahma.applications.execute = function() {
 				if (Brahma(this).data(hyphenProp)!==null) plug.config[prop] = Brahma(this).data(hyphenProp);
 			}
 		};
+
 
 		plug.scope = plug.selector = this;
 		

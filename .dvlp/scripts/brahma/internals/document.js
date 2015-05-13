@@ -47,7 +47,12 @@ brahmaHTMLDoc._startEventListing = function(e) {
 			};
 		break;
 		default:
-
+			/* Split event string when first part is selector, second is origin event name */
+			var parts = e.split('.');
+			
+			Brahma(parts[0]).bind(parts[1], function() {
+				d.catchEvent(e, this, arguments);
+			});
 		break;
 	}
 };

@@ -17,6 +17,19 @@ Brahma.dasherize = function(text) {
 	return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 };
 
+/**
+@method millisify
+convert s of ms to integer (ms)
+millisify("0.5s") = 500
+millisify("1ms") = 1
+*/
+Brahma.millisify = function(mss) {
+	(sms.charAt(0)==='.')?(d=10,sms=sms.substr(1)):(d=1);
+    if (sms.substr(-2)==='ms') return parseFloat(sms)/d;
+    if (sms.substr(-1)==='s') return parseFloat(sms)*1000/d;
+    if (sms.substr(-1)==='h') return parseFloat(sms)*60000/d;
+    return parseFloat(sms)/d;
+};
 
 /* 
 Возвращает величину в пикселях, получая число % или px 

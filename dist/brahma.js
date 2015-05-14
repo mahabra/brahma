@@ -365,7 +365,7 @@ convert s of ms to integer (ms)
 millisify("0.5s") = 500
 millisify("1ms") = 1
 */
-Brahma.millisify = function(mss) {
+Brahma.millisify = function(sms) {
 	(sms.charAt(0)==='.')?(d=10,sms=sms.substr(1)):(d=1);
     if (sms.substr(-2)==='ms') return parseFloat(sms)/d;
     if (sms.substr(-1)==='s') return parseFloat(sms)*1000/d;

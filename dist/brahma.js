@@ -115,6 +115,7 @@ IE не поддерживает scope: в querySelector, поэтому тре�
 	var extensionName = false;
 	var option3 = false;
 	switch (arguments.length) {
+		
 		case 1:
 			var selector = arguments[0];
 			var options = {};
@@ -192,7 +193,7 @@ Brahma.ref = function(proto) {
 		/*
 			Указываем версию
 		*/
-		Brahma.vector.version = '1.3.7';
+		Brahma.vector.version = '1.4.2';
 		/*
 			Над необходимо иметь данное свойство, что бы уметь отличать объекты Brahma от прочих
 		*/
@@ -306,6 +307,7 @@ Brahma.nodeQuery = Brahma.vector.nodeQuery = function(query, root) {
 			return [];
 		break;
 		case 'object':
+			
 			if (query instanceof Array) {
 				
 				return query;
@@ -444,6 +446,8 @@ Brahma.clone = function(prototype) {
 	if (prototype instanceof Array) {
 		var clone = [];
 		clone.length=prototype.length;
+	} else if ("object"!==typeof prototype) {
+		return prototype;
 	} else {
 		var clone = {};
 	};
@@ -547,6 +551,24 @@ Brahma.parseCssDeclarations = function(cssDeclarations) {
 	};
 
 	return options;
+};
+
+/*
+Brahma.fao([a,[b,[c]]])
+Принимает произвольное количестве аргументов, но возвращает массив, где первый аргумент - функция, второй - массив, третий - объект;
+*/
+Brahma.fao = function() {
+	initial=null,internals=null,proto=null;
+	for (var i=0;i<arguments.length;i++)
+	{
+		if ("function"===typeof arguments[i]) initial=arguments[i];
+		if ("object"===typeof arguments[i])
+		{
+			if (arguments[i] instanceof Array) internals=arguments[i];
+			else proto=arguments[i];
+		}
+	};
+	return [initial,internals,proto];
 };
 
 /*
@@ -670,7 +692,7 @@ Brahma.die = function(a) {
 
 				if (data||initial) {
 					// Создаем фабрику
-					this.fabric(globalName, ['events'], initial, data||{});
+					this.fabric(globalName, ['events','fabrics'], initial, data||{});
 					return this;
 				} else {
 					if ("undefined"===typeof this.modules[globalName]) {
@@ -678,6 +700,111 @@ Brahma.die = function(a) {
 					}
 				}
 				return this.modules[globalName];
+			},
+			/*
+			Функция make позволяет произвести сложный объект.
+			В качестве первого аргумента передаются расширения будущего объекта.
+			Второй и третий аргумент может быть функция и объект (их можно менять местами).
+			Объект расширит будущий объект своими свойствами и методами в прототипе.
+			Функция станет конструктором, а так её прототип будет наследован.
+			*/
+			make : function(internals) {
+				'use strict';
+				var 
+				initial=("function"===typeof arguments[2]) ? arguments[2] : ("function"===typeof arguments[1] ? arguments[1] : function(){}),
+				data=("object"===typeof arguments[1]) ? arguments[1] : ("object"===typeof arguments[2] ? arguments[2] : {}),
+				i,prop,construct,radical;
+
+				var construct = function() {};
+				construct.prototype = {
+					constructor: construct
+				};
+				/*
+				Расширяем протоип функциями из internals
+				*/
+				for (i=0;i<internals.length;i++) {
+					if (Brahma.classes.module.internals[internals[i]]) {
+						for (prop in Brahma.classes.module.internals[internals[i]]) {
+							if (Brahma.classes.module.internals[internals[i]].hasOwnProperty(prop)) {
+								if ("function"===typeof Brahma.classes.module.internals[internals[i]][prop]) {
+									construct.prototype[prop] = Object(Brahma.classes.module.internals[internals[i]][prop]);
+								}
+							}
+						}
+					}
+				}
+
+				/*
+				Расширяем прототип функциями из data
+				*/
+				for (prop in data) {
+					if (data.hasOwnProperty(prop)) {
+						if ("function"===typeof data[prop]) {
+							construct.prototype[prop] = Object(data[prop]);
+						}
+					}
+				}
+
+				/*
+				Расширяем прототип прототипом initial
+				*/
+				if ("object"===typeof initial.prototype) {
+					for (prop in initial.prototype) {
+						if (initial.prototype.hasOwnProperty(prop)) {							
+							construct.prototype[prop] = initial.prototype[prop];
+						}
+					}
+				}
+
+				/*
+				Создаем объект
+				*/
+				radical=new construct();
+
+				/*
+				Расширяем радикал свойствами из internals
+				*/
+				for (i=0;i<internals.length;i++) {
+					if (Brahma.classes.module.internals[internals[i]]) {
+						for (prop in Brahma.classes.module.internals[internals[i]]) {
+							if (Brahma.classes.module.internals[internals[i]].hasOwnProperty(prop)) {
+								if ("function"!==typeof Brahma.classes.module.internals[internals[i]][prop]) {
+									/* Отслеживаем псевдо-ссылку */
+									if ("object"!==typeof Brahma.classes.module.internals[internals[i]][prop] || Brahma.classes.module.internals[internals[i]][prop].constructor.name!=='Ref') {
+										radical[prop] = Brahma.clone(Brahma.classes.module.internals[internals[i]][prop]);
+									} else {
+										radical[prop] = Brahma.classes.module.internals[internals[i]][prop];
+									}
+								}
+							}
+						}
+					}
+				}
+
+				/*
+				Расширяем прототип свойствами из data
+				*/
+				for (prop in data) {
+					if (data.hasOwnProperty(prop)) {
+						if ("function"!==typeof data[prop]) {
+							/* Отслеживаем псевдо-ссылку */
+							if ("object"!==typeof data[prop] || data[prop].constructor.name!=='Ref') {
+								radical[prop] = Brahma.clone(data[prop]);
+							} else {
+								radical[prop] = data[prop];
+							}
+						}
+					}
+				}
+
+				/*
+				Инициализируем
+				*/
+				initial.apply(radical);
+				/*
+				Отдаем
+				*/
+				return radical;
 			}
 		}
 	},
@@ -809,6 +936,12 @@ Brahma.die = function(a) {
 				return this.controller;
 			}
 		}
+	},
+	/* Позволяет расширять объект */
+	'assing': {
+		assing: function(extra) {
+			Brahma.extend(this, extra, true);
+		}
 	}
 },
 		});
@@ -907,20 +1040,20 @@ Brahma.applications.execute = function() {
 		/* Import config from data-attributes */
 		if ("object"===typeof Brahma.applications.modules[arguments[0]].config) for (var prop in Brahma.applications.modules[arguments[0]].config) {
 			if (Brahma.applications.modules[arguments[0]].config.hasOwnProperty(prop)) {
-				var hyphenProp = Brahma.dasherize(prop);
+				var hyphenProp = arguments[0]+'-'+Brahma.dasherize(prop);
 				if (Brahma(this).data(hyphenProp)!==null) plug.config[prop] = Brahma(this).data(hyphenProp);
 			}
 		};
 
-
 		plug.scope = plug.selector = this;
 		
 		plug.classname = arguments[0];
-
-
 		
 		// > ! Append life variable to element
-		Brahma(this)[0].component = plug;		
+		if ("object"!==typeof Brahma(this)[0]._brahma) Brahma(this)[0]._brahma = {
+			handlers: {}
+		};
+		Brahma(this)[0]._brahma.handlers[arguments[0]] = plug;		
 		
 		// > inside tie function
 		if (typeof arguments[2] == "function") {
@@ -987,11 +1120,26 @@ Brahma.vector.use = function() {
 		};
 		return this;
 	});
+}
+
+/*
+Получение приложения обрабатывающего этот элемент по его имени
+Если имя не указано возвращает объект со всеми приложениями
+*/
+Brahma.vector.getApp = function(appName) {
+	var ispatch = ("object"===typeof Brahma(this)[0]._brahma);
+	if (appName) {
+		return ispatch&&Brahma(this)[0]._brahma.handlers[appName] ? Brahma(this)[0]._brahma.handlers[appName] : false;
+	} else {
+		return ispatch ? Brahma(this)[0]._brahma.handlers : {};
+	}
 } 
+		
 		/*
 			Возможность быстро создавать модули Brahma.module({});
 		*/
 		Brahma.applications.fabric('module',['events','tie'], function() {});
+/* Функция создает простой модуль */
 Brahma.module = function(extend,args) {
 	return Brahma.applications.create('module',extend||{},args||[]);
 }; 
@@ -1062,9 +1210,35 @@ Brahma.vector.show = function() {
 	});
 };
 
-Brahma.vector.width = function() { return this[0].clientWidth; };
 
-Brahma.vector.height = function() { return this[0].clientWidth; };
+Brahma.vector.width = function() { 
+	if (this[0]===window) {
+		var w = window,
+	    d = document,
+	    e = d.documentElement,
+	    g = d.getElementsByTagName('body')[0];
+	    return w.innerWidth || e.clientWidth || g.clientWidth;
+	} else {
+		return Brahma.bench(this, arguments, function(elem) {
+			return elem[0].offsetWidth;
+		});
+	}
+};
+
+Brahma.vector.height = function() { 
+	
+	if (this[0]===window) {
+		var w = window,
+	    d = document,
+	    e = d.documentElement,
+	    g = d.getElementsByTagName('body')[0];
+	    return w.innerHeight|| e.clientHeight|| g.clientHeight;
+	} else {
+		return Brahma.bench(this, arguments, function(elem) {
+			return elem[0].offsetHeight;
+		});
+	}
+};
 
 Brahma.vector.outerWidth = function() {
 	return Brahma(this[0]).width()+Brahma.macros.dom.pixelizeMargin(this[0],'left')+Brahma.macros.dom.pixelizeMargin(this[0],'right');
@@ -1121,18 +1295,6 @@ Brahma.vector.first = function() {
 	});
 };
 
-Brahma.vector.width = function() {
-	return Brahma.bench(this, arguments, function(elem) {
-		return elem[0].offsetWidth;
-	});
-};
-
-Brahma.vector.height = function() {
-	return Brahma.bench(this, arguments, function(elem) {
-		return elem[0].offsetHeight;
-	});
-};
-
 /**
 @method replace
 Заменяет данный элемент другим элементом и опционально сохраняет data-аргументы и классы
@@ -1181,11 +1343,21 @@ Brahma.vector.replace = function(newElement, preserveData) {
 	});
 }
 
-Brahma.vector.parent = function() {
-
+Brahma.vector.parent = function(search) {
+	var parent,ok;
 	return Brahma.bench(this, arguments, function(elem) {
-
-		if (elem.length>0) return Brahma(elem[0].parentNode);
+		if (elem.length>0) {
+			if (search) {
+				parent = elem[0],ok=false;
+				do {
+					parent = parent.parentNode;
+					if (Brahma(parent).is(search)) return Brahma(parent);
+					if (parent===null||parent.nodeName==='BODY') return false;
+				} while(true);
+			} else {
+				return Brahma(elem[0].parentNode);
+			}
+		}
 		else return null;
 	});
 };
@@ -1421,8 +1593,12 @@ Brahma.removeEvent = function(elem, type, userEventHandler) {
 
 Brahma.vector.bind = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
-		for (var i=0;i<elem.length;i++) {
-		   	Brahma.addEvent(elem[i], args[0], args[1], args[2]||false);
+		var events = args[0].split(' ')
+		for (var e=0;e<events.length;e++) {
+			if (events[e]==='') continue;
+			for (var i=0;i<elem.length;i++) {
+			   	Brahma.addEvent(elem[i], events[e], args[1], args[2]||false);
+			}
 		}
 		return this;
 	});
@@ -1845,8 +2021,15 @@ brahmaHTMLDoc.zindex = {
 
 Brahma.document = brahmaHTMLDoc;
 		
+		/* Функция позволяет создать аналог Brahma и далее развивать его отдельно */
+		Brahma.mutate = function() {
+			return BrahmaStudioFactory();
+		}
+
 		return Brahma;
 	};
+
+
 
 	window.Brahma = window.Studio = BrahmaStudioFactory();
 })();

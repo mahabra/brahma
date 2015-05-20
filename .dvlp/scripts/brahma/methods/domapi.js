@@ -62,9 +62,35 @@ Brahma.vector.show = function() {
 	});
 };
 
-Brahma.vector.width = function() { return this[0].clientWidth; };
 
-Brahma.vector.height = function() { return this[0].clientWidth; };
+Brahma.vector.width = function() { 
+	if (this[0]===window) {
+		var w = window,
+	    d = document,
+	    e = d.documentElement,
+	    g = d.getElementsByTagName('body')[0];
+	    return w.innerWidth || e.clientWidth || g.clientWidth;
+	} else {
+		return Brahma.bench(this, arguments, function(elem) {
+			return elem[0].offsetWidth;
+		});
+	}
+};
+
+Brahma.vector.height = function() { 
+	
+	if (this[0]===window) {
+		var w = window,
+	    d = document,
+	    e = d.documentElement,
+	    g = d.getElementsByTagName('body')[0];
+	    return w.innerHeight|| e.clientHeight|| g.clientHeight;
+	} else {
+		return Brahma.bench(this, arguments, function(elem) {
+			return elem[0].offsetHeight;
+		});
+	}
+};
 
 Brahma.vector.outerWidth = function() {
 	return Brahma(this[0]).width()+Brahma.macros.dom.pixelizeMargin(this[0],'left')+Brahma.macros.dom.pixelizeMargin(this[0],'right');
@@ -121,18 +147,6 @@ Brahma.vector.first = function() {
 	});
 };
 
-Brahma.vector.width = function() {
-	return Brahma.bench(this, arguments, function(elem) {
-		return elem[0].offsetWidth;
-	});
-};
-
-Brahma.vector.height = function() {
-	return Brahma.bench(this, arguments, function(elem) {
-		return elem[0].offsetHeight;
-	});
-};
-
 /**
 @method replace
 Заменяет данный элемент другим элементом и опционально сохраняет data-аргументы и классы
@@ -181,11 +195,21 @@ Brahma.vector.replace = function(newElement, preserveData) {
 	});
 }
 
-Brahma.vector.parent = function() {
-
+Brahma.vector.parent = function(search) {
+	var parent,ok;
 	return Brahma.bench(this, arguments, function(elem) {
-
-		if (elem.length>0) return Brahma(elem[0].parentNode);
+		if (elem.length>0) {
+			if (search) {
+				parent = elem[0],ok=false;
+				do {
+					parent = parent.parentNode;
+					if (Brahma(parent).is(search)) return Brahma(parent);
+					if (parent===null||parent.nodeName==='BODY') return false;
+				} while(true);
+			} else {
+				return Brahma(elem[0].parentNode);
+			}
+		}
 		else return null;
 	});
 };
@@ -421,8 +445,12 @@ Brahma.removeEvent = function(elem, type, userEventHandler) {
 
 Brahma.vector.bind = function() {
 	return Brahma.bench(this, arguments, function(elem, args) {
-		for (var i=0;i<elem.length;i++) {
-		   	Brahma.addEvent(elem[i], args[0], args[1], args[2]||false);
+		var events = args[0].split(' ')
+		for (var e=0;e<events.length;e++) {
+			if (events[e]==='') continue;
+			for (var i=0;i<elem.length;i++) {
+			   	Brahma.addEvent(elem[i], events[e], args[1], args[2]||false);
+			}
 		}
 		return this;
 	});

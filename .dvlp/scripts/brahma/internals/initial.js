@@ -6,6 +6,7 @@ if (this === window) {
 	var extensionName = false;
 	var option3 = false;
 	switch (arguments.length) {
+		
 		case 1:
 			var selector = arguments[0];
 			var options = {};

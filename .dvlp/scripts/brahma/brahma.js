@@ -47,7 +47,7 @@
 		/*
 			Указываем версию
 		*/
-		Brahma.vector.version = '1.3.7';
+		Brahma.vector.version = '1.4.2';
 		/*
 			Над необходимо иметь данное свойство, что бы уметь отличать объекты Brahma от прочих
 		*/
@@ -164,6 +164,7 @@
 			```
 		*/
 		<%=$.snippet('methods/application.js')%> 
+		
 		/*
 			Возможность быстро создавать модули Brahma.module({});
 		*/
@@ -199,8 +200,15 @@
 		*/
 		<%=$.snippet('internals/document.js')%>
 		
+		/* Функция позволяет создать аналог Brahma и далее развивать его отдельно */
+		Brahma.mutate = function() {
+			return BrahmaStudioFactory();
+		}
+
 		return Brahma;
 	};
+
+
 
 	window.Brahma = window.Studio = BrahmaStudioFactory();
 })();

@@ -102,6 +102,8 @@ Brahma.clone = function(prototype) {
 	if (prototype instanceof Array) {
 		var clone = [];
 		clone.length=prototype.length;
+	} else if ("object"!==typeof prototype) {
+		return prototype;
 	} else {
 		var clone = {};
 	};
@@ -205,6 +207,24 @@ Brahma.parseCssDeclarations = function(cssDeclarations) {
 	};
 
 	return options;
+};
+
+/*
+Brahma.fao([a,[b,[c]]])
+Принимает произвольное количестве аргументов, но возвращает массив, где первый аргумент - функция, второй - массив, третий - объект;
+*/
+Brahma.fao = function() {
+	initial=null,internals=null,proto=null;
+	for (var i=0;i<arguments.length;i++)
+	{
+		if ("function"===typeof arguments[i]) initial=arguments[i];
+		if ("object"===typeof arguments[i])
+		{
+			if (arguments[i] instanceof Array) internals=arguments[i];
+			else proto=arguments[i];
+		}
+	};
+	return [initial,internals,proto];
 };
 
 /*

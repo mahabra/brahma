@@ -63,7 +63,7 @@
 
 				if (data||initial) {
 					// Создаем фабрику
-					this.fabric(globalName, ['events'], initial, data||{});
+					this.fabric(globalName, ['events','fabrics'], initial, data||{});
 					return this;
 				} else {
 					if ("undefined"===typeof this.modules[globalName]) {
@@ -71,6 +71,111 @@
 					}
 				}
 				return this.modules[globalName];
+			},
+			/*
+			Функция make позволяет произвести сложный объект.
+			В качестве первого аргумента передаются расширения будущего объекта.
+			Второй и третий аргумент может быть функция и объект (их можно менять местами).
+			Объект расширит будущий объект своими свойствами и методами в прототипе.
+			Функция станет конструктором, а так её прототип будет наследован.
+			*/
+			make : function(internals) {
+				'use strict';
+				var 
+				initial=("function"===typeof arguments[2]) ? arguments[2] : ("function"===typeof arguments[1] ? arguments[1] : function(){}),
+				data=("object"===typeof arguments[1]) ? arguments[1] : ("object"===typeof arguments[2] ? arguments[2] : {}),
+				i,prop,construct,radical;
+
+				var construct = function() {};
+				construct.prototype = {
+					constructor: construct
+				};
+				/*
+				Расширяем протоип функциями из internals
+				*/
+				for (i=0;i<internals.length;i++) {
+					if (Brahma.classes.module.internals[internals[i]]) {
+						for (prop in Brahma.classes.module.internals[internals[i]]) {
+							if (Brahma.classes.module.internals[internals[i]].hasOwnProperty(prop)) {
+								if ("function"===typeof Brahma.classes.module.internals[internals[i]][prop]) {
+									construct.prototype[prop] = Object(Brahma.classes.module.internals[internals[i]][prop]);
+								}
+							}
+						}
+					}
+				}
+
+				/*
+				Расширяем прототип функциями из data
+				*/
+				for (prop in data) {
+					if (data.hasOwnProperty(prop)) {
+						if ("function"===typeof data[prop]) {
+							construct.prototype[prop] = Object(data[prop]);
+						}
+					}
+				}
+
+				/*
+				Расширяем прототип прототипом initial
+				*/
+				if ("object"===typeof initial.prototype) {
+					for (prop in initial.prototype) {
+						if (initial.prototype.hasOwnProperty(prop)) {							
+							construct.prototype[prop] = initial.prototype[prop];
+						}
+					}
+				}
+
+				/*
+				Создаем объект
+				*/
+				radical=new construct();
+
+				/*
+				Расширяем радикал свойствами из internals
+				*/
+				for (i=0;i<internals.length;i++) {
+					if (Brahma.classes.module.internals[internals[i]]) {
+						for (prop in Brahma.classes.module.internals[internals[i]]) {
+							if (Brahma.classes.module.internals[internals[i]].hasOwnProperty(prop)) {
+								if ("function"!==typeof Brahma.classes.module.internals[internals[i]][prop]) {
+									/* Отслеживаем псевдо-ссылку */
+									if ("object"!==typeof Brahma.classes.module.internals[internals[i]][prop] || Brahma.classes.module.internals[internals[i]][prop].constructor.name!=='Ref') {
+										radical[prop] = Brahma.clone(Brahma.classes.module.internals[internals[i]][prop]);
+									} else {
+										radical[prop] = Brahma.classes.module.internals[internals[i]][prop];
+									}
+								}
+							}
+						}
+					}
+				}
+
+				/*
+				Расширяем прототип свойствами из data
+				*/
+				for (prop in data) {
+					if (data.hasOwnProperty(prop)) {
+						if ("function"!==typeof data[prop]) {
+							/* Отслеживаем псевдо-ссылку */
+							if ("object"!==typeof data[prop] || data[prop].constructor.name!=='Ref') {
+								radical[prop] = Brahma.clone(data[prop]);
+							} else {
+								radical[prop] = data[prop];
+							}
+						}
+					}
+				}
+
+				/*
+				Инициализируем
+				*/
+				initial.apply(radical);
+				/*
+				Отдаем
+				*/
+				return radical;
 			}
 		}
 	},
@@ -201,6 +306,12 @@
 				}
 				return this.controller;
 			}
+		}
+	},
+	/* Позволяет расширять объект */
+	'assing': {
+		assing: function(extra) {
+			Brahma.extend(this, extra, true);
 		}
 	}
 }

@@ -2,6 +2,13 @@ Updates
 --
 
 ## Versions
+### Version 1.4.3
+- mutate(); make(), assing() in modules api
+- fao() brahma api
+- getApp - getting app of node
+- width(), height(), parent() with search
+- bind with events split by spaces
+
 ### Version 1.4.2
 - millisify()
 - data-*appName* attr config

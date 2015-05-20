@@ -23,20 +23,20 @@ Brahma.applications.execute = function() {
 		/* Import config from data-attributes */
 		if ("object"===typeof Brahma.applications.modules[arguments[0]].config) for (var prop in Brahma.applications.modules[arguments[0]].config) {
 			if (Brahma.applications.modules[arguments[0]].config.hasOwnProperty(prop)) {
-				var hyphenProp = Brahma.dasherize(prop);
+				var hyphenProp = arguments[0]+'-'+Brahma.dasherize(prop);
 				if (Brahma(this).data(hyphenProp)!==null) plug.config[prop] = Brahma(this).data(hyphenProp);
 			}
 		};
 
-
 		plug.scope = plug.selector = this;
 		
 		plug.classname = arguments[0];
-
-
 		
 		// > ! Append life variable to element
-		Brahma(this)[0].component = plug;		
+		if ("object"!==typeof Brahma(this)[0]._brahma) Brahma(this)[0]._brahma = {
+			handlers: {}
+		};
+		Brahma(this)[0]._brahma.handlers[arguments[0]] = plug;		
 		
 		// > inside tie function
 		if (typeof arguments[2] == "function") {
@@ -103,4 +103,17 @@ Brahma.vector.use = function() {
 		};
 		return this;
 	});
+}
+
+/*
+Получение приложения обрабатывающего этот элемент по его имени
+Если имя не указано возвращает объект со всеми приложениями
+*/
+Brahma.vector.getApp = function(appName) {
+	var ispatch = ("object"===typeof Brahma(this)[0]._brahma);
+	if (appName) {
+		return ispatch&&Brahma(this)[0]._brahma.handlers[appName] ? Brahma(this)[0]._brahma.handlers[appName] : false;
+	} else {
+		return ispatch ? Brahma(this)[0]._brahma.handlers : {};
+	}
 }

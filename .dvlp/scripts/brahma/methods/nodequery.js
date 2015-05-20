@@ -66,6 +66,7 @@ Brahma.nodeQuery = Brahma.vector.nodeQuery = function(query, root) {
 			return [];
 		break;
 		case 'object':
+			
 			if (query instanceof Array) {
 				
 				return query;

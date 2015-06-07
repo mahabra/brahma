@@ -29,7 +29,7 @@
 		assert.equal(typeof Brahma().version,"string", "Inheritance" );
 		
 	});
-	console.log(Brahma('body'));
+	
 	QUnit.test( "Selectors", function( assert ) {
 		assert.equal(typeof Brahma('body')[0],"object", "Simple selector works" );
 		assert.equal(typeof $(Brahma('body'))[0],"object", "jQuery backward compatibility" );
@@ -38,26 +38,13 @@
 
 
 
-	QUnit.test( "Creating apps", function( assert ) {
-		var app = Brahma.app('test', {
-			config: {
-				'hello': 'world'    
-			}
-		});
-		assert.equal(typeof app,"object", "fabric create object" );
-		assert.equal(typeof Brahma('body').app('test'),"object", "fabric create correct object" );
-		assert.equal(Brahma.app('test', {
-			newoption: true
-		}).newoption,true, "change app works" );
-	});
+	
 
 	QUnit.test( "DOM function", function( assert ) {
 		assert.equal(Brahma('.testwrapper').html('hello world').html(),"hello world", "html() works" );
 
 		assert.equal(Brahma('.testwrapper').html('<h1 />').find('h1').length,1, "html(<code />) works" );
 
-		assert.equal(Brahma('.testwrapper').empty().html(),"", "empty() works" );
-		
 		assert.equal(Brahma('.testwrapper').empty().html(),"", "empty() works" );
 
 		assert.equal(Brahma('.testwrapper').put('div', {
@@ -98,6 +85,19 @@
 
 		assert.equal(Brahma('body').find("[data-test=123]").css("display", "table").css("display"), "table", "css() works");
 		assert.equal(Brahma('body').find("[data-test=123]").css({"display": "block"}).css("display"), "block", "css({}) works");
+	});
+
+	QUnit.test( "Creating apps", function( assert ) {
+		var app = Brahma.app('test', {
+			config: {
+				'hello': 'world'    
+			}
+		});
+		assert.equal(typeof app,"object", "fabric create object" );
+		assert.equal(typeof Brahma('body').app('test'),"object", "fabric create correct object" );
+		assert.equal(Brahma.app('test', {
+			newoption: true
+		}).newoption,true, "change app works" );
 	});
 
 	QUnit.test( "Not DOM elements", function( assert ) {

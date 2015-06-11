@@ -265,7 +265,30 @@ var mix = (function (clone) {
 	}
 })(clone);
 
-var api = (function (extend, clone, inheritClassPrototype) {
+var stratify = (function () {
+	/*
+	Функция разделяет объект на два объекта. В первом содержаться только свойства, а во втором только функции.
+	*/
+	return function(source) {
+		var res=[{},{}];
+		
+		for (var prop in source) {
+
+			if (source.hasOwnProperty(prop)) {
+
+				if ("function"===typeof source[prop]) {
+					res[1][prop] = source[prop];
+				} else {
+					res[0][prop] = source[prop];
+				}
+			}
+		}
+
+		return res;
+	}
+})();
+
+var api = (function (extend, clone, inheritClassPrototype,stratify) {
 	return {
 		/*
 		Указывает список классов, которые унаследует новый объект
@@ -289,6 +312,16 @@ var api = (function (extend, clone, inheritClassPrototype) {
 		*/
 		proto: function(data) {
 			extend(this._prototype, data);
+			return this;
+		},
+		extend: function(data) {
+			/*
+			Мы размиксуем свойства от функций, функции передадим в прототип, а свойства создадим в объекте
+			*/
+			var mixed = stratify(data);
+
+			this.proto(extend({},mixed[1]));
+			this.properties(mixed[0]);
 			return this;
 		},
 		/*
@@ -338,32 +371,9 @@ var api = (function (extend, clone, inheritClassPrototype) {
 			return this;
 		}
 	}
-})(extend,clone,inheritClassPrototype);
+})(extend,clone,inheritClassPrototype,stratify);
 
-var stratify = (function () {
-	/*
-	Функция разделяет объект на два объекта. В первом содержаться только свойства, а во втором только функции.
-	*/
-	return function(source) {
-		var res=[{},{}];
-		
-		for (var prop in source) {
-
-			if (source.hasOwnProperty(prop)) {
-
-				if ("function"===typeof source[prop]) {
-					res[1][prop] = source[prop];
-				} else {
-					res[0][prop] = source[prop];
-				}
-			}
-		}
-
-		return res;
-	}
-})();
-
-var abstractClass = (function (extend, api, exPrototype, stratify) {
+var abstractClass = (function (extend, api, exPrototype) {
 	
 	return {
 		create: function(name,proto) {
@@ -377,15 +387,17 @@ var abstractClass = (function (extend, api, exPrototype, stratify) {
 
 				for (i=0;i<abstractClass._inherits.length;i++) {
 
-					abstractClass._scope.class(abstractClass._inherits[i]).constructWithin(this, arguments);
+					abstractClass._scope.class(abstractClass._inherits[i]).constructWithin(this, args);
 				}
 				/*
 				После построения наследуюемых классов, проводим собственную постройку
 				*/
-				abstractClass.constructWithin(this, arguments);
+				abstractClass.constructWithin(this, args);
 			},
 			abstractClass = function() {
-				construct(arguments);
+				
+				if (!abstractClass._lazyConstructor) { construct.call(this, arguments); }
+				else { abstractClass._lazyConstructor=false; }
 			};
 			abstractClass.prototype = exPrototype.create(abstractClass, {
 				_abstractClassName_: name
@@ -399,8 +411,16 @@ var abstractClass = (function (extend, api, exPrototype, stratify) {
 			/*
 			Расширяем функция простроения самого себя
 			*/
-			abstractClass.construct = construct;
-
+			abstractClass.construct = function() {
+				/*
+				Отключаем собственный конструктор класса
+				*/
+				abstractClass._lazyConstructor = true;
+				var module = new abstractClass();
+				construct.call(module, arguments);
+				return module;
+			}
+			abstractClass._lazyConstructor = false;
 			/*
 			Собственное имя класса
 			*/
@@ -435,13 +455,7 @@ var abstractClass = (function (extend, api, exPrototype, stratify) {
 			*/
 			if (arguments.length>1) {
 				if ("object"===typeof arguments[1]) {
-					/*
-					Мы размиксуем свойства от функций, функции передадим в прототип, а свойства создадим в объекте
-					*/
-					var mixed = stratify(arguments[1]);
-					
-					abstractClass.proto(extend({},mixed[1]));
-					abstractClass.properties(mixed[0]);
+					abstractClass.extend(arguments[1]);
 				} else if ("function"===typeof arguments[1]) {
 					abstractClass.construct(arguments[1]);
 				}
@@ -450,7 +464,7 @@ var abstractClass = (function (extend, api, exPrototype, stratify) {
 			return abstractClass;
 		}
 	}
-})(extend,api,exPrototype,stratify);
+})(extend,api,exPrototype);
 
 var object = (function (exPrototype, inheritClassPrototype, extendsObject) {
 	return {
@@ -1338,7 +1352,7 @@ var ref = (function () {
 	});
 
 
-;(function (core, extend, clone, mix, ref, warns) {
+;(function (core, extend, clone, stratify, ref, warns) {
 	/*
 	Наделяет объект способности создавать фабрики, объекты и модули
 	*/
@@ -1358,8 +1372,15 @@ var ref = (function () {
 				this.__industry.factories[name] = Abstract(this).class(name);
 			}
 			if ("object"===typeof classes && classes instanceof Array) this.__industry.factories[name].extends(classes);
-			if ("function"===typeof construct) this.__industry.factories[name].construct(construct);
-			if ("object"===typeof extra) this.__industry.factories[name].proto(extra);
+			if ("function"===typeof construct) this.__industry.factories[name].constructor(construct);
+			/*
+			Раскладываем экстра данные на свойства и функции
+			*/
+			if ("object"===typeof extra) {
+				var extram = stratify(extra);
+				this.__industry.factories[name].proto(extram[1]);
+				this.__industry.factories[name].properties(extram[0]);
+			}
 			return this.__industry.factories[name];
 		},
 		/*
@@ -1368,8 +1389,8 @@ var ref = (function () {
 		*/
 		make: function(name, args) {
 						
-			if ("function"!==this.__industry.factories[name]) {
-				return core.warn(warns['undefined_factory']);
+			if ("function"!==typeof this.__industry.factories[name]) {
+				return core.warn(warns['undefined_factory']+' '+name);
 			}
 			var module = this.__industry.factories[name].construct(args);
 			/*
@@ -1381,7 +1402,7 @@ var ref = (function () {
 			return module;
 		}
 	});
-})(core2,extend,clone,mix,ref,warns);
+})(core2,extend,clone,stratify,ref,warns);
 
 ;(function (core) {
 	core.fn.extend({
@@ -1852,25 +1873,17 @@ var removeEvent = (function () {
 		}).extends('Industry')
 	}).extends('Extendable');
 
-	console.log('core.applications.__applications', core.applications);
+	
 	/* Создаем фабрику для разработки приложений */
 	core.applications.__applications.factory('appdesigner', function() {
 		this.factory = null;
 		this.modules = {};
 	}, {
 		release: function(operand, config) {
-			return this.factory.make(operand, config);
+			return new this.factory(operand, config);
 		},
 		extend: function(data) {
-			for (var prop in data) {
-				if (data.hasOwnProperty(prop)) {
-					if ("function"===typeof data[prop]) {
-						this.factory.proto[prop] = data[prop];
-					} else {
-						this.factory.properties[prop] = clone(data[prop]);
-					}
-				}
-			}
+			this.factory.extend(data);
 			return this;
 		},
 		/*
@@ -1898,12 +1911,13 @@ var removeEvent = (function () {
 			("function"===typeof data || "object"===typeof initial)&&(initial=[data,data=initial][0]);
 
 			this.__applications.designers[name] = this.__applications.make('appdesigner');
+			this.__applications.designers[name].factory = this.__applications.factory(name,function(operand,config) {
 
-			this.__applications.designers[name].factory = this.__applications.factory(name,function(operands,config) {
-				this.operands = operands;
+				this.operand = operand;
 				this.config = extend(this.config||{}, config);
 				if ("function"===typeof initial) initial.apply(this, arguments);
-			},data||{},['tie','events','modules']);
+			},data||{},['Tie','Events','Industry']);
+			
 			return this.__applications.designers[name];
 		},
 		/*

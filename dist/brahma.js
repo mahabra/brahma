@@ -92,6 +92,449 @@ var extend = (function () {
 	};
 })();
 
+var mixin = (function () {
+	return function(target, extend) {
+		for (var prop in extend) {
+			if (extend.hasOwnProperty(prop)) {
+				target[prop] = extend[prop];
+			}
+		}
+	}
+})();
+
+var inheritClassPrototype = (function (mixin) {
+	/*
+	Перемешивание прототипов двух абстрактных классов. Вначале суперпрототип класса смешивается с суперпрототипом наследуемого класса,
+	затем суперпрототип смешивается с прототипом наследуемого класса. Таким образом весь миксинг происходит в суперпрототипе класса.
+	*/
+	return function(target, proto) {
+		if (target._superPrototype_) {
+			/* Расширяем прототип */
+			mixin(target._superPrototype_, proto._superPrototype_);
+			mixin(target._superPrototype_, proto._prototype_);
+		} else if (target.__proto__ && "function"!==typeof target) {
+
+			/* Мы имеем дело с непропатченым объетом, поэтому копируем прототип класса прямо в __proto__ */
+			mixin(target.__proto__, proto._superPrototype_);
+			mixin(target.__proto__, proto._prototype_);
+			
+		} else {
+			/* Отсутсивие поддержки __proto__, пишем прямо в объект */
+			mixin(target, proto._superPrototype_);
+			mixin(target, proto._prototype_);
+		}
+		
+	}
+})(mixin);
+
+var clone = (function () {
+	var self;
+	self = function(prototype) {
+
+		if (prototype instanceof Array) {
+			var clone = [];
+			clone.length=prototype.length;
+		} else if ("object"!==typeof prototype) {
+			return prototype;
+		} else {
+			var clone = {};
+		};
+		
+		for (var prop in prototype) {
+			if (!prototype.hasOwnProperty(prop)) continue;
+			if (prototype[prop]===null || "object"!==typeof prototype[prop] || prototype[prop].constructor.name==='Ref') {
+				clone[prop] = prototype[prop];
+			} else {
+				clone[prop] = self(prototype[prop]);
+			}
+		};
+
+		return clone;
+	}
+	return self;
+})();
+
+var core = (function (extend) {
+	
+	var Abstract = function(Subject){
+		if ("object"===typeof Subject||"function"===typeof Subject) {
+			return Abstract.scope(Subject);
+		} else {
+			// Unhandled subject
+		}
+	};
+
+	/*
+	Функция расширения самого себя
+	*/
+	Abstract.extend = function(data) {
+		extend(Abstract, data);
+		return Abstract;
+	}
+
+	window.abstract = window.Abstract = window.Abs = window.abs = Abstract;
+
+	return Abstract;
+})(extend);
+
+var exPrototype = (function (extend) {
+	return {
+		create: function(construct, ext) {
+			var prototypeConstructor = function() {
+				this.constructor = construct;
+			},
+			superPrototype = prototypeConstructor.prototype = extend(ext, {
+				constructor: prototype
+			}),
+			prototype = new prototypeConstructor();
+
+			Object.defineProperty(prototype, '_prototype_', {
+				configurable: false,
+				enumerable: false,
+				writable: false,
+				value: prototype
+			});
+
+			Object.defineProperty(prototype, '_superPrototype_', {
+				configurable: false,
+				enumerable: false,
+				writable: false,
+				value: superPrototype
+			});
+
+			return prototype;
+		}
+	}
+})(extend);
+
+var extendsObject = (function (inheritClassPrototype) {
+	return function(object, theclass) {
+		
+		inheritClassPrototype(object, theclass._prototype);
+
+		/* Конструируем класс */
+		theclass.constructWithin(object, [])
+		return object;
+	}
+})(inheritClassPrototype);
+
+var mix = (function (clone) {
+	/*
+	Перемешивает функции. В результате получая новую функцию, содеражщую тела обоих функций.
+	Прототипы и личные свойства функций так же миксуются, если имеют место быть. Приоритет на второй функции.
+	*/
+	return function(func1, func2) {
+		if ("function"===typeof func1 && "function"===typeof func2) {
+			var func3 = function() {
+				func2.apply(this, arguments);
+				func1.apply(this, arguments);
+			}
+
+			if ("object"===typeof func1.prototype || "object"===typeof func2.prototype) {
+				if (func1.prototype) {
+					func3.prototype = func1.prototype;
+					func1.prototype=null;
+				}
+				if (func2.prototype) {
+					if ("undefined"!==typeof func3.prototype) 
+					func3.prototype = inherit(func3.prototype, func2.prototype);
+					else func3.prototype = func2.prototype;
+					func2.prototype=null;
+				}
+			}
+
+			for (var prop in func1) {
+				if (func1.hasOwnProperty(prop)&&prop!=="prototype")
+				func3[prop] = func1[prop];
+			}
+
+			for (var prop in func2) {
+				if (func1.hasOwnProperty(prop)&&prop!=="prototype")
+				func3[prop] = func2[prop];
+			}
+
+			return func3;
+		} else if ("object"===typeof func1 && "object"===typeof func2) {
+			for (var prop in func2) {
+				if (func2.hasOwnProperty(prop)) {
+					func1[prop] = clone(func2[prop]);
+				}
+			}
+			return func1; 
+		}
+	}
+})(clone);
+
+var api = (function (extend, clone, inheritClassPrototype) {
+	return {
+		/*
+		Указывает список классов, которые унаследует новый объект
+		*/
+		extends: function(absClass) {
+			if (this._inherits.indexOf(absClass)<0) this._inherits.push(absClass);
+			/* Расширяем класс прототипом из наследуемого класса */
+
+			inheritClassPrototype(this._prototype, this._scope.class(absClass)._prototype);
+			return this;
+		},
+		/*
+		Дополняет свойства, который будут созданы для нового объекта
+		*/
+		properties: function(data) {
+			extend(this._properties, data);
+			return this;
+		},
+		/*
+		Дополняет прототип, который будет унаследован объектом
+		*/
+		proto: function(data) {
+			extend(this._prototype, data);
+			return this;
+		},
+		/*
+		Добавляет новый конструктор
+		*/
+		constructor: function(c) {
+			this._constructors.push(c);
+			return this;
+		},
+		/*
+		Сохраняет переменную, являющуюся данными, которые могут использоваться в дальнешем при построении класса в произвольном порядке
+		*/
+		own: function(name, value) {
+			if ("undefined"===typeof this._own[name]) this._own[name] = clone(value);
+			else {
+				if ("object"===typeof this._own[name] && "object"===typeof value) {
+					extend(this._own[name], value);
+				} else {
+					this._own[name] = clone(value);
+				}
+			}
+			return this;
+		},
+		/*
+		Присваивает свойство, аналогично нативному указанию
+		*/
+		init: function(name, value) {
+			this['_'+name] = value;
+		},
+		/*
+		Выполняет построение класса в контексте объекта. Данная процедура предполагает, что у объекта, в контексте которого происходит построение
+		уже наследован прототип класса, построение которого происходит. Т.е. данная процедура выполняет все элементы построения, кроме наследования
+		прототипа.
+		*/
+		constructWithin: function(subject,args) {
+			/*
+			Создаем собственные свойства
+			*/
+			
+			extend(subject, this._properties);
+			/*
+			Выполняем конструкторы
+			*/
+			for (var i=0;i<this._constructors.length;i++) {
+				this._constructors[i].apply(subject, args);
+			}
+			return this;
+		}
+	}
+})(extend,clone,inheritClassPrototype);
+
+var stratify = (function () {
+	/*
+	Функция разделяет объект на два объекта. В первом содержаться только свойства, а во втором только функции.
+	*/
+	return function(source) {
+		var res=[{},{}];
+		
+		for (var prop in source) {
+
+			if (source.hasOwnProperty(prop)) {
+
+				if ("function"===typeof source[prop]) {
+					res[1][prop] = source[prop];
+				} else {
+					res[0][prop] = source[prop];
+				}
+			}
+		}
+
+		return res;
+	}
+})();
+
+var abstractClass = (function (extend, api, exPrototype, stratify) {
+	
+	return {
+		create: function(name,proto) {
+			/*
+			Функция конструктор
+			*/
+			var abstractClass,i,construct = function(args) {
+				/*
+				Прежде чем строить собственный класс, мы должны произвести построение объекта из наследуемых классов
+				*/
+
+				for (i=0;i<abstractClass._inherits.length;i++) {
+
+					abstractClass._scope.class(abstractClass._inherits[i]).constructWithin(this, arguments);
+				}
+				/*
+				После построения наследуюемых классов, проводим собственную постройку
+				*/
+				abstractClass.constructWithin(this, arguments);
+			},
+			abstractClass = function() {
+				construct(arguments);
+			};
+			abstractClass.prototype = exPrototype.create(abstractClass, {
+				_abstractClassName_: name
+			});
+			/*
+			Расширяем API класса. Пока что через extend, но позже нужно будет проработать вариант расширения прототипа функции конструктора 
+			для браузеров поддерживающих __proto__
+			*/
+			extend(abstractClass, api);
+
+			/*
+			Расширяем функция простроения самого себя
+			*/
+			abstractClass.construct = construct;
+
+			/*
+			Собственное имя класса
+			*/
+			abstractClass._name = name||null;
+			/*
+			Ссылка на область видимости
+			*/
+			abstractClass._scope = null;
+			/*
+			Перечень классов, которые наследует этот класс
+			*/
+			abstractClass._inherits = [];
+			/*
+			Произвольные данные, которые могут использовать другие классы и модули
+			*/
+			abstractClass._own = {};
+			/*
+			Прототип будущего объекта
+			*/
+			abstractClass._prototype = abstractClass.prototype;
+			/*
+			Свойства будущего объекта
+			*/
+			abstractClass._properties = {};
+			/*
+			Дополнительные конструкторы
+			*/
+			abstractClass._constructors = [];
+
+			/*
+			Если в аргументах функции указан второй аргумент, значит это или прототип или конструктор
+			*/
+			if (arguments.length>1) {
+				if ("object"===typeof arguments[1]) {
+					/*
+					Мы размиксуем свойства от функций, функции передадим в прототип, а свойства создадим в объекте
+					*/
+					var mixed = stratify(arguments[1]);
+					
+					abstractClass.proto(extend({},mixed[1]));
+					abstractClass.properties(mixed[0]);
+				} else if ("function"===typeof arguments[1]) {
+					abstractClass.construct(arguments[1]);
+				}
+			}
+
+			return abstractClass;
+		}
+	}
+})(extend,api,exPrototype,stratify);
+
+var object = (function (exPrototype, inheritClassPrototype, extendsObject) {
+	return {
+		create: function(scope) {
+			var abstractObject = function(scope) {
+				this._prototype_._scope = scope;
+			}
+			abstractObject.prototype = exPrototype.create(abstractObject, {
+				extends: function(classes) {
+					if (arguments.length>1&&!(classes instanceof Array)) {
+						classes = Array.prototype.slice.apply(arguments);
+					} else {
+						if (!(classes instanceof Array)) classes = [classes];
+					}
+					for (var i = 0;i<classes.length;i++) {
+						
+						if ("string"!==typeof classes[i]) {
+							// ERROR! Classname must be a string
+							continue;
+						}
+
+						
+						extendsObject(this, this._prototype_._scope.class(classes[i]));
+						
+					}
+					return this;
+				}
+			});
+
+			return new abstractObject(scope);
+		}
+	}
+})(exPrototype,inheritClassPrototype,extendsObject);
+
+var scope = (function (abstractClass, object, extendsObject, mix, inheritClassPrototype) {
+
+	return function(id) {
+		/* Creating new scope */
+		var scope;
+		scope = function(data) {
+			/*
+			Create new object by anonym class
+			*/
+			var o = object.create(scope);
+
+			if ("object"===typeof data) for (var prop in data) {
+				if (data.hasOwnProperty(prop)) {
+					o[prop] = data[prop];
+				}
+			}
+			return o;
+		};
+		/*
+		Scope id is index in stack
+		*/
+		scope.id = id;
+		/*
+		Own scope classes
+		*/
+		scope.classes = {};
+		/*
+		Method to create new class in scope
+		*/
+		scope.class = function(className, data) {
+
+			if ("function"!==typeof scope.classes[className]||scope.classes[className]===null) {
+				scope.classes[className] = abstractClass.create(className, data);
+				scope.classes[className].init('scope', this);
+				return scope.classes[className];
+			} else {
+				return scope.classes[className];
+			}
+		}
+		/*
+		Method to extends any object
+		*/
+		scope.extends = function(target, className) {
+			extendsObject(target, this.class(className));
+		}
+
+		return scope;
+	}
+})(abstractClass,object,extendsObject,mix,inheritClassPrototype);
+
 var querySelector = (function () {
 	/*
 	IE не поддерживает scope: в querySelector, поэтому требуется альтернативное решение.
@@ -244,7 +687,45 @@ var querySelector = (function () {
 	}
 })();
 
-var core = (function (extend, querySelector) {
+
+	core.extend({
+		/* Позволяет расширить любой объект функционалом класса */
+		extends: function() {
+
+		}
+	});
+
+
+;(function (core, scope, clone) {
+	var stack = {},index=1;
+	
+	core.extend({
+		scope: function(subject) {
+			/*
+			Массив с контекстными объектами. Предположим мы работает в контесте window abs(window) и иницализируем переменную abd(window).static('a', 123).
+			Данная переменная будет содержаться в Abstact.mediums.object1
+			*/
+			if (!subject.hasOwnProperty('__abstract__')) {
+				stack[index] = scope(index);
+				Object.defineProperty(subject, '__abstract__', {
+					enumerable: false,
+					configurable: false,
+					writable: false,
+					value: index
+				});
+				return stack[index];
+			} else {
+				return stack[subject.__abstract__];
+			}
+		}
+	});
+})(core,scope,clone);
+
+var abstract = (function (core) {
+	return core;
+})(core);
+
+var core2 = (function (extend, querySelector) {
 		
 	var Brahma = function() {
 		if (this === window) {
@@ -302,80 +783,6 @@ var core = (function (extend, querySelector) {
 	return Brahma;
 
 })(extend,querySelector);
-
-var clone = (function () {
-	var self;
-	self = function(prototype) {
-
-		if (prototype instanceof Array) {
-			var clone = [];
-			clone.length=prototype.length;
-		} else if ("object"!==typeof prototype) {
-			return prototype;
-		} else {
-			var clone = {};
-		};
-		
-		for (var prop in prototype) {
-			if (!prototype.hasOwnProperty(prop)) continue;
-			if (prototype[prop]===null || "object"!==typeof prototype[prop] || prototype[prop].constructor.name==='Ref') {
-				clone[prop] = prototype[prop];
-			} else {
-				clone[prop] = self(prototype[prop]);
-			}
-		};
-
-		return clone;
-	}
-	return self;
-})();
-
-var mix = (function () {
-	/*
-	Перемешивает функции. В результате получая новую функцию, содеражщую тела обоих функций.
-	Прототипы и личные свойства функций так же миксуются, если имеют место быть. Приоритет на второй функции.
-	*/
-	return function(func1, func2) {
-		if ("function"===typeof func1 && "function"===typeof func2) {
-			var func3 = function() {
-				func2.apply(this, arguments);
-				func1.apply(this, arguments);
-			}
-
-			if ("object"===typeof func1.prototype || "object"===typeof func2.prototype) {
-				if (func1.prototype) {
-					func3.prototype = func1.prototype;
-					func1.prototype=null;
-				}
-				if (func2.prototype) {
-					if ("undefined"!==typeof func3.prototype) 
-					func3.prototype = inherit(func3.prototype, func2.prototype);
-					else func3.prototype = func2.prototype;
-					func2.prototype=null;
-				}
-			}
-
-			for (var prop in func1) {
-				if (func1.hasOwnProperty(prop)&&prop!=="prototype")
-				func3[prop] = func1[prop];
-			}
-
-			for (var prop in func2) {
-				if (func1.hasOwnProperty(prop)&&prop!=="prototype")
-				func3[prop] = func2[prop];
-			}
-
-			return func3;
-		} else if ("object"===typeof func1 && "object"===typeof func2) {
-			for (var prop in func2) {
-				if (func2.hasOwnProperty(prop)) {
-					func1[prop] = clone(func2[prop]);
-				}
-			}
-			return func1;
-		}
-	}
-})();
 
 var warns = (function () {
 	return {
@@ -460,6 +867,13 @@ var inherit = (function (extend, clone, mix) {
 		}
 	}
 })(extend,clone,mix);
+
+;(function (core) {
+
+	core.warn = function(message) {
+		console.error("%c Brahma.warn", "color:red;font-weight:bold;", message);
+	}
+})(core2);
 
 var charge = (function (inherit, clone) {
 	/*
@@ -602,7 +1016,6 @@ var charge = (function (inherit, clone) {
 
 ;(function (core, charge, mix, warns) {
 	core.classes = {};
-
 	/*
 	Creates new class
 	*/
@@ -650,78 +1063,78 @@ var charge = (function (inherit, clone) {
 
 		return extend;
 	}
-})(core,charge,mix,warns);
+})(core2,charge,mix,warns);
 
-
+;(function (core, extend) {
 	core.fn.extend = function(ext) {
 		extend(this, ext);
 	}
+})(core2,extend);
 
+;(function (core) {
+	console.log(window.abstract);
+	abs(core).class('Events')
+	.properties({
+		__events: {
+			eventListners : {}
+		}
+	})
+	.proto({
+		bind : function(e, callback, once) {
 
+			if (typeof this.__events.eventListners[e] !== 'object') this.__events.eventListners[e] = [];
+			
+			this.__events.eventListners[e].push({
+				callback: callback,
+				once: once
+			});
 
-	core.classes['events'] = {
-		properties: {
-			__events: {
-				eventListners : {}
-			}
+			return this;
 		},
-		proto: {
-			bind : function(e, callback, once) {
+		on: function() {
+			this.bind.apply(this, arguments);
+			return this;
+		},	
+		once : function(e, callback) {
+			this.bind(e, callback, true);
+			return this;
+		},
+		trigger : function() {
+			
+			
+			if (typeof arguments[0] == 'integer') {
+				var uin = arguments[0];
+				var e = arguments[1];
+				var args = (arguments.length>2) ? arguments[2] : [];
+			} else {
+				var uin = false;
+				var e = arguments[0];
+				var args = (arguments.length>1) ? arguments[1] : [];
+			};
+			
+			var response = false;
 
-				if (typeof this.__events.eventListners[e] !== 'object') this.__events.eventListners[e] = [];
-				
-				this.__events.eventListners[e].push({
-					callback: callback,
-					once: once
-				});
+			if (typeof this.__events.eventListners[e] == 'object' && this.__events.eventListners[e].length>0) {
+				var todelete = [];
+				for (var i = 0; i<this.__events.eventListners[e].length; i++) {
+					if (typeof this.__events.eventListners[e][i] === 'object') {
+						if (typeof this.__events.eventListners[e][i].callback === "function") response = this.__events.eventListners[e][i].callback.apply(this, args);
+						
+						if (this.__events.eventListners[e][i].once) {
 
-				return this;
-			},
-			on: function() {
-				this.bind.apply(this, arguments);
-				return this;
-			},	
-			once : function(e, callback) {
-				this.bind(e, callback, true);
-				return this;
-			},
-			trigger : function() {
-				
-				
-				if (typeof arguments[0] == 'integer') {
-					var uin = arguments[0];
-					var e = arguments[1];
-					var args = (arguments.length>2) ? arguments[2] : [];
-				} else {
-					var uin = false;
-					var e = arguments[0];
-					var args = (arguments.length>1) ? arguments[1] : [];
-				};
-				
-				var response = false;
-
-				if (typeof this.__events.eventListners[e] == 'object' && this.__events.eventListners[e].length>0) {
-					var todelete = [];
-					for (var i = 0; i<this.__events.eventListners[e].length; i++) {
-						if (typeof this.__events.eventListners[e][i] === 'object') {
-							if (typeof this.__events.eventListners[e][i].callback === "function") response = this.__events.eventListners[e][i].callback.apply(this, args);
-							
-							if (this.__events.eventListners[e][i].once) {
-
-								todelete.push(i);
-							};
+							todelete.push(i);
 						};
 					};
-					
-					if (todelete.length>0) for (var i in todelete) {
-						this.__events.eventListners[e].splice(todelete[i], 1);
-					};
 				};
-				return response;
-			}
+				
+				if (todelete.length>0) for (var i in todelete) {
+					this.__events.eventListners[e].splice(todelete[i], 1);
+				};
+			};
+			return response;
 		}
-	};
-
+	});	
+})(core2);
 
 var support = (function (core, extend) {
 	core.support = function(test) {
@@ -736,7 +1149,7 @@ var support = (function (core, extend) {
 
 	return core.support;
 
-})(core,extend);
+})(core2,extend);
 
 var getAbstractClass = (function () {
 	var detectors = {
@@ -867,7 +1280,7 @@ var utils = (function (core, extend) {
 	};
 
 	return core.utils;
-})(core,extend);
+})(core2,extend);
 
 var ref = (function () {
 	/*
@@ -884,17 +1297,18 @@ var ref = (function () {
 	}
 })();
 
-;(function () {
-	core.charge(core, 'events', true);
-})(core);
+;(function (core) {
 
+	abstract(core).extends(core, 'Events');
+})(core2);
 
-	core.document = core.create({
+;(function (core) {
+	core.document = Abs(core)({
 		ready: false
-	}, ['events']);
+	}).extends('events');
+})(core2);
 
-
-
+;(function (core) {
 	core.fn.extend({
 		parent: function() {
 			var parentList = [];
@@ -904,7 +1318,7 @@ var ref = (function () {
 			return Brahma(parentList);
 		}
 	})
-
+})(core2);
 
 
 	utils.extend({
@@ -928,124 +1342,48 @@ var ref = (function () {
 	/*
 	Наделяет объект способности создавать фабрики, объекты и модули
 	*/
-	core.classes['industry'] = {
-		properties: {
-			__industry: {
-				factories: {}
-			}
-		},
-		proto: {
-			/*
-			Создает новую фабрику с имененм name, расширенную абстрактными классами classes, с конструктором construct и свойствами extra
-			*/
-			factory: function(name, construct, extra, classes) {
-				classes=classes||[];
-				construct=construct||null;
-				extra=extra||null;
-				var self = this;
-				if (!(classes instanceof Array)) classes= [classes];
-				/* Создает новую или расширяет существующую фабрику */
-				if ("object"!==typeof this.__industry.factories[name]) {
-					this.__industry.factories[name] = {
-						properties: {},
-						proto: {},
-						construct: function(){},
-						make: function() {
-							return self.make.call(self, name, arguments);
-						}
-					};
-				};
-
-				var self = this;
-				classes.forEach(function(classname) {
-					/*
-					Ошибка: не найден абстрактный класс
-					*/
-					if ("object"!==typeof core.classes[classname]) return core.warn(warns["undefined_absclass"]+" "+classname);
-
-					var absClass=core.classes[classname];
-					/*
-					Расширяем конструктор классом
-					*/
-
-					if ("function"===typeof absClass.constructor) {
-						self.__industry.factories[name].construct = mix(self.__industry.factories[name].construct, absClass.constructor);
-					}
-
-					/*
-					Расширяем прототип
-					*/
-					if ("object"===typeof absClass.proto) {
-						inherit(self.__industry.factories[name].proto, absClass.proto);
-					}
-					/*
-					Расширяем свойства
-					*/
-					if ("object"===typeof absClass.properties) {
-						self.__industry.factories[name].properties = extend(self.__industry.factories[name].properties, absClass.properties);
-					}
-				});
-
-				/* Расширяем пользовательским конструктором */
-				if ("function"===typeof construct) {
-					this.__industry.factories[name].construct = mix(self.__industry.factories[name].construct, construct);
-				}
-
-				/* Расширяем пользовательским объектом */
-				for (var prop in extra) {
-					if (extra.hasOwnProperty(prop)) {
-						if ("function"===typeof extra[prop]) {
-							this.__industry.factories[name].proto[prop] = extra[prop];
-						} else {
-							this.__industry.factories[name].properties[prop] = extra[prop];
-						}
-					}
-				}
-				
-				return this.__industry.factories[name];
-				
-			},
-			/*
-			Создает объект на основе фабрики. Если фабрика не указана явно, то принимает имя по-умолчанию default.
-			Default позволяет создавать быстрые объекты. my.create();
-			*/
-			make: function(name, args) {
-				
-				("string"!==typeof name) && (extra=name,name="default");
-				("object"!==typeof options) && (options={});
-
-				if ("object"!==typeof this.__industry.factories[name]) return core.warn(warns['undefined_factory']+" "+name);
-				var factory = this.__industry.factories[name];
-
-				var moduleFactory = function(){
-					for (prop in factory.properties) {
-						if (factory.properties.hasOwnProperty(prop)) {
-							this[prop] = clone(factory.properties[prop]);
-							console.log('$module A', this.config);
-						}
-					}
-					
-				};
-				
-				moduleFactory.prototype = factory.proto;
-
-				var module = new moduleFactory();
-				
-				factory.construct.apply(module, args||[]);
-
-				/*
-				Указываем ссылку на хозяина
-				*/
-				module.parent = ref(this);
-
-
-				return module;
-			}
+	Abstract(core)
+	.class('Industry')
+	.properties({
+		__industry: {
+			factories: {}
 		}
-	}
-})(core,extend,clone,mix,ref,warns);
+	})
+	.proto({
+		/*
+		Создает новую фабрику с имененм name, расширенную абстрактными классами classes, с конструктором construct и свойствами extra
+		*/
+		factory: function(name, construct, extra, classes) {
+			if ("function"!==typeof this.__industry.factories[name]) {
+				this.__industry.factories[name] = Abstract(this).class(name);
+			}
+			if ("object"===typeof classes && classes instanceof Array) this.__industry.factories[name].extends(classes);
+			if ("function"===typeof construct) this.__industry.factories[name].construct(construct);
+			if ("object"===typeof extra) this.__industry.factories[name].proto(extra);
+			return this.__industry.factories[name];
+		},
+		/*
+		Создает объект на основе фабрики. Если фабрика не указана явно, то принимает имя по-умолчанию default.
+		Default позволяет создавать быстрые объекты. my.create();
+		*/
+		make: function(name, args) {
+						
+			if ("function"!==this.__industry.factories[name]) {
+				return core.warn(warns['undefined_factory']);
+			}
+			var module = this.__industry.factories[name].construct(args);
+			/*
+			Указываем ссылку на хозяина
+			*/
+			module.parent = ref(this);
 
 
+			return module;
+		}
+	});
+})(core2,extend,clone,mix,ref,warns);
+
+;(function (core) {
 	core.fn.extend({
 		each: function(callback) {
 			for (var i = 0; i<this.length;i++) {
@@ -1054,14 +1392,7 @@ var ref = (function () {
 			return this;
 		}
 	});
-
-
-
-
-	core.warn = function(message) {
-		console.error("%c Brahma.warn", "color:red;font-weight:bold;", message);
-	}
-
+})(core2);
 
 var addEvent = (function () {
 	return function(elem, type, userEventHandler, once) {
@@ -1108,7 +1439,7 @@ var removeEvent = (function () {
 	};
 })();
 
-
+;(function (core, querySelector) {
 	core.fn.extend({
 		find: function(selector) {
 			var suit = [],elements;
@@ -1122,9 +1453,9 @@ var removeEvent = (function () {
 			return Brahma(suit);
 		}
 	});
+})(core2,querySelector);
 
-
-
+;(function (core) {
 	core.fn.extend({
 		html: function(html) {
 			if ("undefined"===typeof html) {
@@ -1137,9 +1468,9 @@ var removeEvent = (function () {
 			});
 		}
 	});
+})(core2);
 
-
-
+;(function (core) {
 	core.fn.extend({
 		empty: function() {
 			this.each(function() {
@@ -1148,9 +1479,9 @@ var removeEvent = (function () {
 			return this;
 		}
 	});
+})(core2);
 
-
-
+;(function (core, determineNodeObject) {
 	core.fn.extend({
 		put: function(subject, data) {
 			// This function return Array anyway
@@ -1166,9 +1497,9 @@ var removeEvent = (function () {
 			return Brahma(objects);
 		}
 	});
+})(core2,determineNodeObject);
 
-
-
+;(function (core, determineNodeObject) {
 	core.fn.extend({
 		and: function(subject, data) {
 			// This function return Array anyway
@@ -1191,9 +1522,9 @@ var removeEvent = (function () {
 			return Brahma(objects);
 		}
 	});
+})(core2,determineNodeObject);
 
-
-
+;(function (core) {
 	core.fn.extend({
 		attr: function() {
 			if (arguments.length>0) {
@@ -1225,9 +1556,9 @@ var removeEvent = (function () {
 			};
 		}
 	});
+})(core2);
 
-
-
+;(function (core) {
 	core.fn.extend({
 		addClass: function() {
 			var className = arguments[0].split(' '),i;
@@ -1254,9 +1585,9 @@ var removeEvent = (function () {
 			return this;
 		}
 	});
+})(core2);
 
-
-
+;(function (core,determineNodeObject) {
 	core.fn.extend({
 		wrapAll: function(subject, data) {
 			var objects = determineNodeObject(subject, data),i=0;
@@ -1273,9 +1604,9 @@ var removeEvent = (function () {
 			return Brahma(objects);
 		}
 	});
+})(core2,determineNodeObject);
 
-
-
+;(function (core) {
 	core.fn.extend({
 		data: function() {
 			var args=arguments,
@@ -1303,9 +1634,9 @@ var removeEvent = (function () {
 			return this;
 		}
 	});
+})(core2);
 
-
-
+;(function (core) {
 	core.fn.extend({
 		css: function() {
 			
@@ -1329,7 +1660,7 @@ var removeEvent = (function () {
 			}
 		}
 	});
-
+})(core2);
 
 ;(function (core, addEvent, removeEvent) {
 	core.fn.extend({
@@ -1356,9 +1687,9 @@ var removeEvent = (function () {
 			});
 		}
 	});
-})(core,addEvent,removeEvent);
+})(core2,addEvent,removeEvent);
 
-;(function () {
+;(function (core) {
 	
 	(function (win, fn) {
 	      var done = false, top = true,
@@ -1408,7 +1739,7 @@ var removeEvent = (function () {
 			}
 		}
 	});
-})(core);
+})(core2);
 
 
 	support.extend({
@@ -1464,66 +1795,64 @@ var removeEvent = (function () {
 	});
 
 
-
-	core.classes['tie'] = {
-		proto: {
-			tie: function(cb) {
-				cb.apply(this, arguments);
-				return this;
-			}
+;(function (core) {
+	abstract(core).class('Tie')
+	.proto({
+		tie: function(cb) {
+			cb.apply(this, arguments);
+			return this;
 		}
-	}
+	});
+})(core2);
 
-
-
+;(function (core) {
 	/*
 	Позволяеь создавать модули для фабрик
 	*/
-	core.classes.create('modules',{
-		properties: {
-			__modules: {
-				modules: {}
-			}
-		},
-		proto: {
-			module: function(name) {
-				var 
-				name='module_'+name||'module_default',
-				initial=("function"===typeof arguments[2]) ? arguments[2] : ("function"===typeof arguments[1] ? arguments[1] : false),
-				data=("object"===typeof arguments[1]) ? arguments[1] : ("object"===typeof arguments[2] ? arguments[2] : false);
+	Abstract(core).class('Modular')
+	.extends('Industry')
+	.properties({
+		__modules: {
+			modules: {}
+		}
+	})
+	.proto({
+		module: function(name) {
+			var 
+			name='module_'+name||'module_default',
+			initial=("function"===typeof arguments[2]) ? arguments[2] : ("function"===typeof arguments[1] ? arguments[1] : false),
+			data=("object"===typeof arguments[1]) ? arguments[1] : ("object"===typeof arguments[2] ? arguments[2] : false);
 
-				if (data||initial) {
-					// Создаем фабрику
-					this.factory(name, initial, data||{}, ['events','modules']);
-					return this;
-				} else {
-					if ("undefined"===typeof this.__modules.modules[name]) {
-						this.__modules.modules[name] = this.make(name);
-					}
+			if (data||initial) {
+				// Создаем фабрику
+				this.factory(name, initial, data||{}, ['events','modules']);
+				return this;
+			} else {
+				if ("undefined"===typeof this.__modules.modules[name]) {
+					this.__modules.modules[name] = this.make(name);
 				}
-				return this.__modules.modules[name];
 			}
+			return this.__modules.modules[name];
 		}
-	},['industry']);
+	});
+})(core2);
 
-
-
-	core.classes['extendable'] = {
-		proto: {
-			extend: function(extra) {
-				extend(this, extra);
-			}
+;(function (core, extend) {
+	abstract(core).class('Extendable', {
+		extend: function(extra) {
+			extend(this, extra);
 		}
-	}
-
+	});
+})(core2,extend);
 
 ;(function (core, mix, clone) {
-	core.applications = core.create({
-		__applications: core.create({
+	core.applications = Abstract(core)({
+		__applications: Abstract(core)({
 			designers: {}
-		},['industry'])
-	},['extendable']);
+		}).extends('Industry')
+	}).extends('Extendable');
 
+	console.log('core.applications.__applications', core.applications);
 	/* Создаем фабрику для разработки приложений */
 	core.applications.__applications.factory('appdesigner', function() {
 		this.factory = null;
@@ -1558,7 +1887,7 @@ var removeEvent = (function () {
 
 			return this;
 		}
-	},['tie']);
+	},['Tie']);
 
 	
 	core.applications.extend({
@@ -1606,7 +1935,8 @@ var removeEvent = (function () {
 	core.fn.app = function(name, config) {
 		return core.applications.run(name, this, config);
 	}
-})(core,mix,clone);
+})(core2,mix,clone);
 
-
+;(function (core) {
 	window.brahma = window.Brahma = core;
+})(core2);
